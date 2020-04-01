@@ -12,7 +12,7 @@ CFLAGS += -Wall
 
 # MPI Flags
 RUNFLAGS += --mca coll_base_verbose 1
-NUM_PROCS = 4
+NUM_PROCS = 14
 MPICC ?= mpicc
 
 all : $(TARGETS)
