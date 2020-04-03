@@ -17,6 +17,7 @@
 #include "rand.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 double dboard (int darts);
 #define DARTS 50000     /* number of throws at dartboard */
@@ -27,9 +28,9 @@ int main (int argc, char *argv[])
 {
 	double homepi,      /* value of pi calculated by current task */
 		pisum,          /* sum of tasks' pi values */
-		pi,	            /* average of pi after "darts" is thrown */
+		pi,             /* average of pi after "darts" is thrown */
 		avepi;          /* average pi value for all iterations */
-	int	taskid,         /* task ID - also used as seed number */
+	int taskid,         /* task ID - also used as seed number */
 		numtasks,       /* number of tasks */
 		rc,             /* return code */
 		i;
@@ -44,10 +45,10 @@ int main (int argc, char *argv[])
 	MPI_Init(&argc,&argv);
 	MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
 	MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
-	printf ("MPI task %d has started...\n", taskid);
+	usleep((useconds_t) rand()/10000);
 
 	/* Set seed for random number generator equal to task ID */
-    set_seed(42, taskid);
+	set_seed(42, taskid);
 	avepi = 0;
 	for (i = 0; i < ROUNDS; i++) {
 		/* All tasks calculate pi using dartboard algorithm */
@@ -72,8 +73,8 @@ int main (int argc, char *argv[])
 		if (taskid == MASTER) {
 			pi = pisum/numtasks;
 			avepi = ((avepi * i) + pi)/(i + 1);
-			printf("   After %8d throws, average value of pi = %10.16f\n",
-			        (DARTS * (i + 1)),avepi);
+			// printf("   After %8d throws, average value of pi = %10.16f\n",
+			//         (DARTS * (i + 1)),avepi);
 		}
 	}
 
@@ -104,9 +105,9 @@ int main (int argc, char *argv[])
 	}
 
 	if (taskid == MASTER) {
-		printf ("\nReal value of PI: 3.1415926535897 \n");
 		printf ("Final value of pi        = %10.16f\n",pi);
 		printf ("Final value of serial pi = %10.16f\n",spi);
+		// printf ("Real value of PI: 3.1415926535897\n");
 	}
 
 	MPI_Finalize();

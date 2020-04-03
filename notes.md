@@ -70,3 +70,39 @@ compared with a truly uniform random distribution. We find p < 0.xxxxx
 However, when measuring things like a Matrix's condition number, we may wish to
 have a nonuniform distribution to artificially increase a matrix's condition number,
 or increase the error, for example.
+
+## Looking at MPI Reduce algorithm
+First, you go and look at this,
+```
+ompi_info --param coll tuned --all | less -S
+```
+and look for reduce. Then, you notice the following:
+```
+MCA coll tuned: parameter "coll_tuned_reduce_algorithm" (current value: "ignore", data source: default, level: 5 tuner/detail, type: int)
+            Which reduce algorithm is used. Can be locked down to choice of: 0 ignore, 1 linear, 2 chain, 3 pipeline, 4 binary, 5 binomial, 6
+            Valid values: 0:"ignore", 1:"linear", 2:"chain", 3:"pipeline", 4:"binary", 5:"binomial", 6:"in-order_binary"
+```
+You then try to find out how to set this, noticing you can use environment
+variables of the form `OMPI_MCA_<whatever`, read from file
+`$HOME/.openmpi/mca-params.conf`, or use
+```
+mpirun --mca param_name param_value
+```
+And
+[here](https://github.com/open-mpi/ompi/blob/master/ompi/mca/coll/tuned/coll_tuned_reduce_decision.c)'s
+where the file is, though I can't find 7 rabenseifner on the spack openmpi
+3.1.5.
+
+Now, I also wanna be ridiculously verbose so maybe I can do this:
+```
+ompi_info -a | grep verbose
+```
+to find
+```
+MCA coll base: parameter "coll_base_verbose" (current value: "error", data source: default, level: 8 dev/detail, type: int)
+                          Verbosity level for the coll framework (default: 0)
+                          Valid values: -1:"none", 0:"error", 10:"component", 20:"warn", 40:"info", 60:"trace", 80:"debug", 100:"max", 0 - 100
+```
+
+
+
