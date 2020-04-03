@@ -105,8 +105,8 @@ int main (int argc, char *argv[])
 	}
 
 	if (taskid == MASTER) {
-		printf ("Final value of pi        = %10.16f\n",pi);
-		printf ("Final value of serial pi = %10.16f\n",spi);
+		printf ("Final value of pi        = %a\n",pi);
+		printf ("Final value of serial pi = %a\n",spi);
 		// printf ("Real value of PI: 3.1415926535897\n");
 	}
 
