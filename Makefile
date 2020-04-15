@@ -1,32 +1,34 @@
 # Makefile for MPI reduction tests
 # Make sure to do spack load openmpi
 
-SOURCES = rand.c
-TARGETS = mpi_pi_reduce
-
-OBJECTS = $(SOURCES:.c=.o)
+EXTRA_SOURCES = rand.c
+TARGETS = mpi_pi_reduce omp_dotprod_mpi
 HEADERS = rand.h
-TARGET_OBJS = $(TARGETS:=.o)
+
 # MPI Modular Component Architecture commands
-VERBOSITY = coll_base_verbose 40
-REDUCE_ALGO = coll_tuned_reduce_algorithm 1
+VERBOSITY = coll_base_verbose 0
+#VERBOSITY = coll_base_verbose 40
+
+# MPI Flags
+NUM_PROCS = 10
+MPICC ?= mpicc
 
 CFLAGS += -Wall
 
-# MPI Flags
-NUM_PROCS = 15
-MPICC ?= mpicc
+# Shouldn't need to change
+OBJECTS = $(EXTRA_SOURCES:.c=.o)
+TARGET_OBJS = $(TARGETS:=.o)
 
 all : $(TARGETS)
 
-rand.o : rand.c rand.h
-	$(CC) $(CFLAGS) -c $<
+%.o : %.c
+	$(CC) $(CFLAGS) -c $^
 
 mpi_pi_reduce : $(OBJECTS) mpi_pi_reduce.o 
 	$(MPICC) $(CFLAGS) -o $@ $^
 
-mpi_pi_reduce.o : mpi_pi_reduce.c
-	$(CC) $(CFLAGS) -c $^
+omp_dotprod_mpi : $(OBJECTS) omp_dotprod_mpi.o 
+	$(MPICC) $(CFLAGS) -o $@ $^
 
 ALGOS = 0 1 2 3 4 5 6
 # 1:"linear"
@@ -37,10 +39,17 @@ ALGOS = 0 1 2 3 4 5 6
 # 6:"in-order_binary"
 
 .PHONY : test
+basic : $(TARGETS)
+	mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm 1 mpi_pi_reduce
+	mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm 1 omp_dotprod_mpi
+
 test : $(TARGETS)
 	$(foreach algo,$(ALGOS),\
 		echo Reduction algorithm $(algo) ; \
-		mpirun -np $(NUM_PROCS) --mca coll_base_verbose 100 --mca coll_tuned_reduce_algorithm $(algo) mpi_pi_reduce;)
+		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) mpi_pi_reduce;)
+	$(foreach algo,$(ALGOS),\
+		echo Reduction algorithm $(algo) ; \
+		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) omp_dotprod_mpi;)
 
 
 .PHONY: clean

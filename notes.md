@@ -89,7 +89,7 @@ variables of the form `OMPI_MCA_<whatever`, read from file
 mpirun --mca param_name param_value
 ```
 And
-[here](https://github.com/open-mpi/ompi/blob/master/ompi/mca/coll/tuned/coll_tuned_reduce_decision.c)'s
+[here](https://github.com/open-mpi/ompi/blob/master/ompi/mca/coll/base/coll_base_reduce.c)'s
 where the file is, though I can't find 7 rabenseifner on the spack openmpi
 3.1.5.
 
@@ -104,5 +104,21 @@ MCA coll base: parameter "coll_base_verbose" (current value: "error", data sourc
                           Valid values: -1:"none", 0:"error", 10:"component", 20:"warn", 40:"info", 60:"trace", 80:"debug", 100:"max", 0 - 100
 ```
 
+## Bug I ran into
+`printf("%10.16f\n", )` will print different things for the same bits. Do "%a"
+instead.
 
+## Other methods
+Use different distributions for pi, then move on to [Coral
+benchmarks](https://asc.llnl.gov/CORAL-benchmarks/) from LLNL to see how much
+differences we can find.
 
+Softair krylov methods, linear solvers, something. Comb and see what algorithms
+are most sensitive.
+
+Another paper to look at is [this](https://ieeexplore.ieee.org/document/6831947),
+which talks about MPICH reproducibility, but focuses more on performance.
+
+There's also this idea of using a fixed-point 4300 bit accumulator to represent double-precision exactly:
+[here](http://sites.utexas.edu/jdm4372/2012/02/15/is-ordered-summation-a-hard-problem-to-speed-up/)
+though I don't know if there's any implementation of this.

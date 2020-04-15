@@ -1,6 +1,5 @@
 /**********************************************************************
  * FILE: mpi_pi_reduce.c
- * OTHER FILES: dboard.c
  * DESCRIPTION:
  *   MPI pi Calculation Example - C Version
  *   Collective Communication example:
@@ -13,16 +12,16 @@
  *   Center. Converted to MPI: George L. Gusciora, MHPCC (1/95)
  * LAST REVISED: 06/13/13 Blaise Barney
 **********************************************************************/
-#include "mpi.h"
 #include "rand.h"
+#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 double dboard (int darts);
-#define DARTS 50000     /* number of throws at dartboard */
-#define ROUNDS 100      /* number of times "darts" is iterated */
-#define MASTER 0        /* task ID of master task */
+#define DARTS 5000     /* number of throws at dartboard */
+#define ROUNDS 10      /* number of times "darts" is iterated */
+#define MASTER 0       /* task ID of master task */
 
 int main (int argc, char *argv[])
 {
@@ -46,6 +45,9 @@ int main (int argc, char *argv[])
 	MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
 	MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
 	usleep((useconds_t) rand()/10000);
+
+	if (taskid == 0)
+		printf("Starting mpi_pi_reduce. Using %d tasks...\n", numtasks);
 
 	/* Set seed for random number generator equal to task ID */
 	set_seed(42, taskid);
@@ -111,7 +113,7 @@ int main (int argc, char *argv[])
 	}
 
 	MPI_Finalize();
-	return 0;
+	return rc;
 }
 
 
