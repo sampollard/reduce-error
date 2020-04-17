@@ -20,6 +20,8 @@
 
 /* Define length of dot product vectors */
 #define VECLEN 100
+#define RAND_01a() subnormal_rand()
+#define RAND_01b() (1.0);
 
 int main (int argc, char* argv[])
 {
@@ -52,15 +54,13 @@ int main (int argc, char* argv[])
 	 * We do extra here for simplicity and so rank 0 has enough room */
 	a = (double*) malloc (len*sizeof(double));
 	b = (double*) malloc (len*sizeof(double));
-	/* TODO: The seeds get called different numbers of times for different
-     * ranks */
 
 	/* Initialize dot product vectors */
 	chunk = len/numtasks;
-	set_seed(42, taskid);
-	for (i = chunk*taskid; i < chunk*taskid + chunk; i++) {
-		a[i] = unif_rand_R();
-		b[i] = unif_rand_R();
+	set_seed(42, 0);
+	for (i = 0; i < len; i++) {
+		a[i] = RAND_01a();
+		b[i] = RAND_01b();
 	}
 
 	/* Perform the dot product */
@@ -75,13 +75,13 @@ int main (int argc, char* argv[])
 		printf ("MPI version: dot(x,y)      = %f (%a)\n", allsum, allsum);
 
 	/* Now, task 0 does all the work to check */
+	set_seed(42, 0);
 	if (taskid == 0) {
 		mysum = 0.0;
 		for (i=0; i<numtasks; i++) {
-			set_seed(42, i);
 			for (j = chunk*i; j < chunk * i + chunk; j++) {
-				a[j] = unif_rand_R();
-				b[j] = unif_rand_R();
+				a[j] = RAND_01a();
+				b[j] = RAND_01b();
 				mysum += a[j] * b[j];
 			}
 		}

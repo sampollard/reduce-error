@@ -39,3 +39,26 @@ double unif_rand_R(void)
     I2= 18000*(I2 & 0177777) + (I2>>16);
     return ((I1 << 16)^(I2 & 0177777)) * 2.328306437080797e-10; /* in [0,1) */
 }
+
+typedef union Double Double;
+union Double {
+    double f;
+    unsigned long long d;
+};
+
+double subnormal_rand(void)
+{
+    I1= 36969*(I1 & 0177777) + (I1>>16);
+    I2= 18000*(I2 & 0177777) + (I2>>16);
+
+	Double x;
+	long long unsigned i1 = (unsigned long long) I1;
+	long long unsigned i2 = (unsigned long long) I2;
+
+	x.d = (i1 << 32) ^ i2;
+	/* Clear sign and most significant exponent digit so that sign is positive
+	 * and the exponent is < 0. This method will actually be able to generate
+	 * subnormal numbers, though it is not uniformly distributed. */
+	x.d = x.d & ~(3ULL << 62);
+	return x.f;
+}

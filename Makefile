@@ -11,7 +11,8 @@ VERBOSITY = coll_base_verbose 0
 
 # MPI Flags
 NUM_PROCS = 10
-MPICC ?= mpicc
+#MPICC ?= mpicc
+MPICC ?= smpicc
 
 CFLAGS += -Wall
 
@@ -22,7 +23,7 @@ TARGET_OBJS = $(TARGETS:=.o)
 all : $(TARGETS)
 
 %.o : %.c
-	$(CC) $(CFLAGS) -c $^
+	$(MPICC) $(CFLAGS) -c $^
 
 mpi_pi_reduce : $(OBJECTS) mpi_pi_reduce.o 
 	$(MPICC) $(CFLAGS) -o $@ $^
@@ -39,9 +40,8 @@ ALGOS = 0 1 2 3 4 5 6
 # 6:"in-order_binary"
 
 .PHONY : test
-basic : $(TARGETS)
-	mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm 1 mpi_pi_reduce
-	mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm 1 omp_dotprod_mpi
+sim : $(TARGETS)
+	smpirun -hostfile hostfile-tree.txt -platform platform-tree.xml -np $(NUM_PROCS) ./omp_dotprod_mpi
 
 test : $(TARGETS)
 	$(foreach algo,$(ALGOS),\
