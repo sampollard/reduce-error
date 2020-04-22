@@ -1,0 +1,8 @@
+# Compiled files
+*.o
+*.gch
+# Temporary files made by SimGrid
+smpitmp-*
+# Vim files
+.*.swp
+.*.swo

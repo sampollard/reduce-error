@@ -31,7 +31,8 @@ mpi_pi_reduce : $(OBJECTS) mpi_pi_reduce.o
 omp_dotprod_mpi : $(OBJECTS) omp_dotprod_mpi.o 
 	$(MPICC) $(CFLAGS) -o $@ $^
 
-ALGOS = 0 1 2 3 4 5 6
+# OpenMPI MPI_Reduce Algorithms
+OMPI_ALGOS = 0 1 2 3 4 5 6
 # 1:"linear"
 # 2:"chain"
 # 3:"pipeline"
@@ -39,10 +40,22 @@ ALGOS = 0 1 2 3 4 5 6
 # 5:"binomial"
 # 6:"in-order_binary"
 
-.PHONY : test
-sim : $(TARGETS)
-	smpirun -hostfile hostfile-tree.txt -platform platform-tree.xml -np $(NUM_PROCS) ./omp_dotprod_mpi
+# MPI_Reduce options for SimGrid:
+MPI_REDUCE_ALGOS = default ompi mpich mvapich2 impi automatic \
+	arrival_pattern_aware binomial flat_tree NTSL scatter_gather ompi_chain \
+	ompi_pipeline ompi_binary ompi_in_order_binary ompi_binomial \
+	ompi_basic_linear mvapich2_knomial mvapich2_two_level rab
 
+.PHONY : sim
+sim : $(TARGETS)
+	$(foreach algo,$(MPI_REDUCE_ALGOS),\
+		smpirun -hostfile hostfile-tree.txt -platform platform-tree.xml -np $(NUM_PROCS) \
+			--cfg=smpi/host-speed:20000000 \
+			--cfg=smpi/reduce:$(algo) \
+			--log=smpi_coll.thres:info \
+			./omp_dotprod_mpi;)
+
+.PHONY : test
 test : $(TARGETS)
 	$(foreach algo,$(ALGOS),\
 		echo Reduction algorithm $(algo) ; \

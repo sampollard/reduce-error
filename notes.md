@@ -122,3 +122,15 @@ which talks about MPICH reproducibility, but focuses more on performance.
 There's also this idea of using a fixed-point 4300 bit accumulator to represent double-precision exactly:
 [here](http://sites.utexas.edu/jdm4372/2012/02/15/is-ordered-summation-a-hard-problem-to-speed-up/)
 though I don't know if there's any implementation of this.
+
+## Onto SimGrid
+Now, I can't get differing results using regular running. Time to simulate.
+This went about by looking first at SST from Sandia. I installed that and it's
+absolutely bonkers, so I found simgrid. It wasn't too hard to install, and also I found this:
+`smpirun --help-coll` which doesn't actually work. You need to do things like
+```
+smpirun --cfg=smpi/alltoall:pair
+```
+Trying to figure out logging (or other help), since `--help-logs` or as
+documented doesn't give any more information.  Instead, looking at examples we
+see `--log=smpi_config.thres:warning` stuff like this.
