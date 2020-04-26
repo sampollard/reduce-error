@@ -52,7 +52,7 @@ sim : $(TARGETS)
 		smpirun -hostfile hostfile-tree.txt -platform platform-tree.xml -np $(NUM_PROCS) \
 			--cfg=smpi/host-speed:20000000 \
 			--cfg=smpi/reduce:$(algo) \
-			--log=smpi_coll.thres:info \
+			--log=smpi_colls.threshold:debug \
 			./omp_dotprod_mpi;)
 
 .PHONY : test

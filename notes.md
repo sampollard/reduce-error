@@ -124,6 +124,16 @@ There's also this idea of using a fixed-point 4300 bit accumulator to represent 
 though I don't know if there's any implementation of this.
 
 ## Onto SimGrid
+I installed simgrid using
+```
+wget https://framagit.org/simgrid/simgrid/uploads/0365f13697fb26eae8c20fc234c5af0e/SimGrid-3.25.tar.gz
+tar -xvf SimGrid-3.25.tar.gz
+cd SimGrid
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local/bin .
+make
+make install
+```
+
 Now, I can't get differing results using regular running. Time to simulate.
 This went about by looking first at SST from Sandia. I installed that and it's
 absolutely bonkers, so I found simgrid. It wasn't too hard to install, and also I found this:
@@ -134,3 +144,26 @@ smpirun --cfg=smpi/alltoall:pair
 Trying to figure out logging (or other help), since `--help-logs` or as
 documented doesn't give any more information.  Instead, looking at examples we
 see `--log=smpi_config.thres:warning` stuff like this.
+
+## ELPA and benchmarks
+This took some good old fashioned HPC elbow grease. I used spack for a few
+things, but had to download and build elpa manually. Turns out the API changed,
+so I'm trying to fix that. Seems like so far only the timers changed, hopefully
+that's easy.
+
+Update: I just added
+```
+    double precision :: time_start, time_end, time_evp_fwd, time_evp_solve, time_evp_back
+```
+to the function signatures. This means the values are uninitialized and
+_garbage_ but at least it builds. Another important thing is you need to
+make sure elpa and eignenkernel are both built with `smpif90`, not `mpif90`
+
+Then you can run with
+```
+export OMP_NUM_THREADS=1
+smpirun -hostfile ../hostfile-tree.txt -platform ../platform-tree.xml -np 2 \
+	--cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug \
+	bin/eigenkernel_app -s general_elpa1 matrix/ELSES_MATRIX_BNZ30_A.mtx matrix/ELSES_MATRIX_BNZ30_B.mtx
+```
+Still getting some segfaults... this is stupid.
