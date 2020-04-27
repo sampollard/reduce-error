@@ -10,7 +10,7 @@ VERBOSITY = coll_base_verbose 0
 #VERBOSITY = coll_base_verbose 40
 
 # MPI Flags
-NUM_PROCS = 10
+NUM_PROCS = 16
 #MPICC ?= mpicc
 MPICC ?= smpicc
 
@@ -47,9 +47,11 @@ MPI_REDUCE_ALGOS = default ompi mpich mvapich2 impi automatic \
 	ompi_basic_linear mvapich2_knomial mvapich2_two_level rab
 
 .PHONY : sim
+NUM_PROCS = 16
 sim : $(TARGETS)
+	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi --log=smpi_colls.threshold:debug ./omp_dotprod_mpi
 	$(foreach algo,$(MPI_REDUCE_ALGOS),\
-		smpirun -hostfile hostfile-tree.txt -platform platform-tree.xml -np $(NUM_PROCS) \
+		smpirun -hostfile topologies/hostfile-$(NUM_PROCS).txt -platform topologies/fattree-$(NUM_PROCS).xml -np $(NUM_PROCS) \
 			--cfg=smpi/host-speed:20000000 \
 			--cfg=smpi/reduce:$(algo) \
 			--log=smpi_colls.threshold:debug \

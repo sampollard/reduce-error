@@ -157,7 +157,9 @@ Update: I just added
 ```
 to the function signatures. This means the values are uninitialized and
 _garbage_ but at least it builds. Another important thing is you need to
-make sure elpa and eignenkernel are both built with `smpif90`, not `mpif90`
+make sure elpa and eignenkernel are both built with `smpif90`, not `mpif90`.
+
+That didn't work, so I commented them out.
 
 Then you can run with
 ```
@@ -166,4 +168,9 @@ smpirun -hostfile ../hostfile-tree.txt -platform ../platform-tree.xml -np 2 \
 	--cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug \
 	bin/eigenkernel_app -s general_elpa1 matrix/ELSES_MATRIX_BNZ30_A.mtx matrix/ELSES_MATRIX_BNZ30_B.mtx
 ```
-Still getting some segfaults... this is stupid.
+Still getting some segfaults... this is stupid. Giving up for now.
+
+## Analytical measurement
+Trying to get some logging. This `--log=coll:tuned:topo_build_tree.threshold:debug`
+doesn't work. Only some algos use this logging, I'm going to fork and make my
+own for better logging.

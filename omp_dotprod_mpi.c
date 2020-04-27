@@ -19,7 +19,7 @@
 #include "rand.h"
 
 /* Define length of dot product vectors */
-#define VECLEN 100
+#define VECLEN 720 /* 720 = 2*3*4*5*6 */
 #define RAND_01a() subnormal_rand()
 #define RAND_01b() (1.0);
 
