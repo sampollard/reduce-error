@@ -46,11 +46,15 @@ MPI_REDUCE_ALGOS = default ompi mpich mvapich2 impi automatic \
 	ompi_pipeline ompi_binary ompi_in_order_binary ompi_binomial \
 	ompi_basic_linear mvapich2_knomial mvapich2_two_level rab
 
+.PHONY : quick
+quick : $(TARGETS)
+	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi
+	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi
+	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi
+
 .PHONY : sim
-NUM_PROCS = 16
 sim : $(TARGETS)
-	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi --log=smpi_colls.threshold:debug ./omp_dotprod_mpi
-	$(foreach algo,$(MPI_REDUCE_ALGOS),\
+	$(foreach algo,$(MPI_REDUCE_ALGOS), \
 		smpirun -hostfile topologies/hostfile-$(NUM_PROCS).txt -platform topologies/fattree-$(NUM_PROCS).xml -np $(NUM_PROCS) \
 			--cfg=smpi/host-speed:20000000 \
 			--cfg=smpi/reduce:$(algo) \

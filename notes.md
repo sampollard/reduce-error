@@ -171,6 +171,12 @@ smpirun -hostfile ../hostfile-tree.txt -platform ../platform-tree.xml -np 2 \
 Still getting some segfaults... this is stupid. Giving up for now.
 
 ## Analytical measurement
-Trying to get some logging. This `--log=coll:tuned:topo_build_tree.threshold:debug`
-doesn't work. Only some algos use this logging, I'm going to fork and make my
-own for better logging.
+
+## Empirircal updates.
+Trying to get some logging, using `--log=coll:tuned:topo_build_tree.threshold:debug`
+to get the topology stuff. Not seeing a difference was my mistake, I was
+printing the wrong variable. Now I'm getting some very slight differences in
+results sometimes.
+
+I was finally able to get it to get different results.
+
