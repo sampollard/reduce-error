@@ -12,9 +12,10 @@ VERBOSITY = coll_base_verbose 0
 # MPI Flags
 NUM_PROCS = 16
 #MPICC ?= mpicc
-MPICC ?= smpicc
+MPICC = smpicc
 
 CFLAGS += -Wall
+VECLEN = 1440
 
 # Shouldn't need to change
 OBJECTS = $(EXTRA_SOURCES:.c=.o)
@@ -48,9 +49,10 @@ MPI_REDUCE_ALGOS = default ompi mpich mvapich2 impi automatic \
 
 .PHONY : quick
 quick : $(TARGETS)
-	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi
-	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi
-	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi
+	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi $(VECLEN)
+	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi $(VECLEN)
+	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi $(VECLEN)
+	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi $(VECLEN)
 
 .PHONY : sim
 sim : $(TARGETS)
@@ -59,7 +61,7 @@ sim : $(TARGETS)
 			--cfg=smpi/host-speed:20000000 \
 			--cfg=smpi/reduce:$(algo) \
 			--log=smpi_colls.threshold:debug \
-			./omp_dotprod_mpi;)
+			./omp_dotprod_mpi $(VECLEN);)
 
 .PHONY : test
 test : $(TARGETS)
@@ -68,7 +70,7 @@ test : $(TARGETS)
 		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) mpi_pi_reduce;)
 	$(foreach algo,$(ALGOS),\
 		echo Reduction algorithm $(algo) ; \
-		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) omp_dotprod_mpi;)
+		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) omp_dotprod_mpi $(VECLEN);)
 
 
 .PHONY: clean

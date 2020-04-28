@@ -19,17 +19,17 @@
 #include "rand.h"
 
 /* Define length of dot product vectors */
-#define VECLEN 7200 /* 720 = 2*3*4*5*6 */
+#define VECLEN 720 /* 720 = 2*3*4*5*6 */
 // #define RAND_01a() subnormal_rand()
-#define RAND_01a() unif_rand_R();
-#define RAND_01b() (1.0);
+#define RAND_01a() (unif_rand_R());
+#define RAND_01b() (unif_rand_R());
 
 int main (int argc, char* argv[])
 {
 	int taskid, numtasks;
-	long i, j, chunk, len=VECLEN, rc=0;
-	double *a, *b, *as, *bs, *ser_sum;
-	double mysum, par_sum;
+	long i, j, chunk, len, rc=0;
+	double *a, *b, *as, *bs, *rank_sum;
+	double mysum, par_sum, can_mpi_sum;
 	union udouble {
 	  double d;
 	  unsigned long u;
@@ -41,7 +41,8 @@ int main (int argc, char* argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 	MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
 
-	if (len % numtasks != 0) {
+	len = atol(argv[1]);
+	if (len <= 0 || len % numtasks != 0) {
 		if (taskid == 0) {
 			fprintf(stderr,
 					"Number of MPI ranks (%d) must divide vector size (%ld)\n",
@@ -63,7 +64,7 @@ int main (int argc, char* argv[])
 	b  = (double*) malloc(len*sizeof(double));
 	as = (double*) malloc(len*sizeof(double));
 	bs = (double*) malloc(len*sizeof(double));
-	ser_sum = (double *) malloc (numtasks*sizeof(double));
+	rank_sum = (double *) malloc (numtasks*sizeof(double));
 
 	/* Initialize dot product vectors */
 	chunk = len/numtasks;
@@ -83,15 +84,16 @@ int main (int argc, char* argv[])
 	MPI_Reduce(&mysum, &par_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 	if (taskid == 0) {
 		pv.d = par_sum;
-		printf("MPI version: dot(x,y)     =\t%a\t0x%lx\n", par_sum, pv.u);
+		printf("MPI:               dot(x,y) =\t%a\t0x%lx\n", par_sum, pv.u);
 	}
 
 	/* Now, task 0 does all the work to check. The canonical ordering
 	 * is increasing taskid */
 	set_seed(42, 0);
 	if (taskid == 0) {
+		mysum = 0.0;
 		for (i = 0; i < numtasks; i++) {
-			ser_sum[i] = 0.0;
+			rank_sum[i] = 0.0;
 			for (j = chunk*i; j < chunk * i + chunk; j++) {
 				as[j] = RAND_01a();
 				bs[j] = RAND_01b();
@@ -101,21 +103,25 @@ int main (int argc, char* argv[])
 						        as[j], a[j], bs[j], b[j]);
 				}
 				*/
-				ser_sum[i] += as[j] * bs[j];
+				rank_sum[i] += as[j] * bs[j];
+				mysum += as[j] * bs[j];
 			}
 		}
-		mysum = 0.0;
+		can_mpi_sum = 0.0;
 		for (i = 0; i < numtasks; i++) {
-			mysum += ser_sum[i];
+			can_mpi_sum += rank_sum[i];
 		}
+		pv.d = can_mpi_sum;
+		printf("Canonical MPI:     dot(x,y) =\t%a\t0x%lx\n", can_mpi_sum, pv.u);
 		pv.d = mysum;
-		printf("Serial version: dot(x,y)  =\t%a\t0x%lx\n", mysum, pv.u);
+		printf("Serial left assoc: dot(x,y) =\t%a\t0x%lx\n", mysum, pv.u);
 	}
 
 	free(a);
 	free(b);
 	free(as);
 	free(bs);
+	free(rank_sum);
 
 done:
 	MPI_Finalize();
