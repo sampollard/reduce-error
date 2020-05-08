@@ -14,7 +14,7 @@ NUM_PROCS = 16
 #MPICC ?= mpicc
 MPICC = smpicc
 
-CFLAGS += -Wall
+CFLAGS += -Wall -Wno-incompatible-pointer-types 
 VECLEN = 1440
 
 # Shouldn't need to change

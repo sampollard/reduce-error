@@ -28,12 +28,14 @@
 #define RAND_01a() (unif_rand_R())
 #define RAND_01b() (unif_rand_R()*2 - 1.0)
 
+double associative_sum_rand(double *A, long int n, int seed);
+
 int main (int argc, char* argv[])
 {
 	int taskid, numtasks;
 	long i, j, chunk, len, rc=0;
 	double *a, *b, *as, *bs, *rank_sum;
-	double mysum, par_sum, can_mpi_sum;
+	double mysum, par_sum, can_mpi_sum, rassoc_sum;
 	union udouble {
 	  double d;
 	  unsigned long u;
@@ -97,11 +99,6 @@ int main (int argc, char* argv[])
 	// MPI_Reduce(&mysum, &par_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 	MPI_Reduce(&mysum, &par_sum, 1, MPI_DOUBLE, nc_sum, 0, MPI_COMM_WORLD);
 
-	if (taskid == 0) {
-		pv.d = par_sum;
-		printf("MPI:               dot(x,y) =\t%a\t0x%lx\n", par_sum, pv.u);
-	}
-
 	/* Now, task 0 does all the work to check. The canonical ordering
 	 * is increasing taskid */
 	set_seed(42, 0);
@@ -126,6 +123,11 @@ int main (int argc, char* argv[])
 		for (i = 0; i < numtasks; i++) {
 			can_mpi_sum += rank_sum[i];
 		}
+		// Generate a random summation
+		rassoc_sum = associative_sum_rand(rank_sum, numtasks, 1);
+		printf("Random assocs:     dot(x,y) =\t%a\t0x%lx\n", rassoc_sum, pv.u);
+		pv.d = par_sum;
+		printf("MPI:               dot(x,y) =\t%a\t0x%lx\n", par_sum, pv.u);
 		pv.d = can_mpi_sum;
 		printf("Canonical MPI:     dot(x,y) =\t%a\t0x%lx\n", can_mpi_sum, pv.u);
 		pv.d = mysum;

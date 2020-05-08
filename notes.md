@@ -180,3 +180,11 @@ results sometimes.
 
 I was finally able to get it to get different results.
 
+### 5/8
+Implementing the random binary trees is a little more difficult than I thought.
+I forgot a few important issues, namely:
+1. You can't just allocate an array for the binary tree since it's not balanced 
+2. There are a few more details to worry about for implementation.
+
+However, I was able to add a custom MPI Operation, and that still resulted in
+different answers.
