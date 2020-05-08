@@ -1,9 +1,9 @@
 # Makefile for MPI reduction tests
 # Make sure to do spack load openmpi
 
-EXTRA_SOURCES = rand.c
+EXTRA_SOURCES = rand.c tree.c mpi_op.c
 TARGETS = mpi_pi_reduce omp_dotprod_mpi
-HEADERS = rand.h
+HEADERS = rand.h mpi_op.h
 
 # MPI Modular Component Architecture commands
 VERBOSITY = coll_base_verbose 0
@@ -26,7 +26,7 @@ all : $(TARGETS)
 %.o : %.c
 	$(MPICC) $(CFLAGS) -c $^
 
-mpi_pi_reduce : $(OBJECTS) mpi_pi_reduce.o 
+mpi_pi_reduce : $(OBJECTS) mpi_pi_reduce.o
 	$(MPICC) $(CFLAGS) -o $@ $^
 
 omp_dotprod_mpi : $(OBJECTS) omp_dotprod_mpi.o 

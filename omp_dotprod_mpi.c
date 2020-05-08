@@ -6,23 +6,27 @@
 *   hybrid MPI/OpenMP program.  The relevant codes are:
 *      - omp_dotprod_serial.c  - Serial version
 *      - omp_dotprod_openmp.c  - OpenMP only version
-*      - omp_dotprod_mpi.c     - MPI only version
+*      + omp_dotprod_mpi.c     - MPI only version
 *      - omp_dotprod_hybrid.c  - Hybrid MPI and OpenMP version
 * SOURCE: Blaise Barney
-* LAST REVISED: 4/14/20 - Samuel Pollard
+* LAST REVISED: 5/7/20 - Samuel Pollard
 ******************************************************************************/
 
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "rand.h"
+#include "tree.h"
+#include "mpi_op.h"
 
 /* Define length of dot product vectors */
 #define VECLEN 720 /* 720 = 2*3*4*5*6 */
-// #define RAND_01a() subnormal_rand()
-#define RAND_01a() (unif_rand_R());
-#define RAND_01b() (unif_rand_R());
+//#define RAND_01a() (subnormal_rand())
+//#define RAND_01b() (subnormal_rand())
+#define RAND_01a() (unif_rand_R())
+#define RAND_01b() (unif_rand_R()*2 - 1.0)
 
 int main (int argc, char* argv[])
 {
@@ -49,6 +53,15 @@ int main (int argc, char* argv[])
 					numtasks, len);
 		}
 		rc = 1;
+		goto done;
+	}
+	/* Create custom MPI Reduce that is just + but not commutative */
+	MPI_Op nc_sum;
+	rc = MPI_Op_create(noncommutative_sum, false, &nc_sum);
+	if (rc != 0) {
+		if (taskid == 0) {
+			fprintf(stderr, "Could not create MPI op noncommutative sum\n");
+		}
 		goto done;
 	}
 
@@ -81,7 +94,9 @@ int main (int argc, char* argv[])
 	}
 
 	/* After the dot product, perform a summation of results on each node */
-	MPI_Reduce(&mysum, &par_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	// MPI_Reduce(&mysum, &par_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	MPI_Reduce(&mysum, &par_sum, 1, MPI_DOUBLE, nc_sum, 0, MPI_COMM_WORLD);
+
 	if (taskid == 0) {
 		pv.d = par_sum;
 		printf("MPI:               dot(x,y) =\t%a\t0x%lx\n", par_sum, pv.u);
@@ -126,4 +141,15 @@ int main (int argc, char* argv[])
 done:
 	MPI_Finalize();
 	return rc;
+}
+
+/* Sum the array, using random associations. That is, this will do things like
+ * (a+b)+c or a+(b+c). There are C_n different ways to associate the sum of an
+ * array, where C_n is the nth Catalan number. This function has the side-effect
+ * of setting the seed and calling rand() many times.
+ */
+double associative_sum_rand(double *A, long int n, int seed)
+{
+	srand(seed);
+	return sample_tree_binary(A, n);
 }
