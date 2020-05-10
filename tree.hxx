@@ -8,6 +8,8 @@
 #define FP_OP +
 #endif
 
+#include <cstdio>
+
 typedef struct node {
 	long int l;
 	long int r;

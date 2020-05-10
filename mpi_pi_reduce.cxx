@@ -12,11 +12,12 @@
  *   Center. Converted to MPI: George L. Gusciora, MHPCC (1/95)
  * LAST REVISED: 06/13/13 Blaise Barney
 **********************************************************************/
-#include "rand.h"
 #include <mpi.h>
-#include <stdio.h>
+#include <cstdio>
 #include <stdlib.h>
 #include <unistd.h>
+
+#include "rand.hxx"
 
 double dboard (int darts);
 #define DARTS 5000     /* number of throws at dartboard */
@@ -38,7 +39,7 @@ int main (int argc, char *argv[])
 	unsigned int *seed_vault;    /* Array for random seeds */
 	int j;
 
-	MPI_Status status;
+	// MPI_Status status;
 
 	/* Obtain number of tasks and task ID */
 	MPI_Init(&argc,&argv);

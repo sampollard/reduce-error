@@ -12,14 +12,14 @@
 * LAST REVISED: 5/7/20 - Samuel Pollard
 ******************************************************************************/
 
+#include <cstdio>
 #include <mpi.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "rand.h"
-#include "tree.h"
-#include "mpi_op.h"
+#include "rand.hxx"
+#include "tree.hxx"
+#include "mpi_op.hxx"
 
 /* Define length of dot product vectors */
 #define VECLEN 720 /* 720 = 2*3*4*5*6 */
@@ -59,7 +59,7 @@ int main (int argc, char* argv[])
 	}
 	/* Create custom MPI Reduce that is just + but not commutative */
 	MPI_Op nc_sum;
-	rc = MPI_Op_create(noncommutative_sum, false, &nc_sum);
+	rc = MPI_Op_create((MPI_User_function *) noncommutative_sum, false, &nc_sum);
 	if (rc != 0) {
 		if (taskid == 0) {
 			fprintf(stderr, "Could not create MPI op noncommutative sum\n");
@@ -124,8 +124,11 @@ int main (int argc, char* argv[])
 			can_mpi_sum += rank_sum[i];
 		}
 		// Generate a random summation
-		rassoc_sum = associative_sum_rand(rank_sum, numtasks, 1);
-		printf("Random assocs:     dot(x,y) =\t%a\t0x%lx\n", rassoc_sum, pv.u);
+		/*
+		 * rassoc_sum = associative_sum_rand(rank_sum, numtasks, 1);
+		 * pv.d = rassoc_sum;
+		 * printf("Random assocs:     dot(x,y) =\t%a\t0x%lx\n", rassoc_sum, pv.u);
+		 */
 		pv.d = par_sum;
 		printf("MPI:               dot(x,y) =\t%a\t0x%lx\n", par_sum, pv.u);
 		pv.d = can_mpi_sum;

@@ -1,5 +1,5 @@
 /* MPI Operations */
-#include "mpi_op.h"
+#include "mpi_op.hxx"
 
 void noncommutative_sum(double *in, double *inout, int *len, MPI_Datatype *dptr)
 {

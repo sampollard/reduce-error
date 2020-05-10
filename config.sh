@@ -9,9 +9,9 @@ ROOT_DIR=$(pwd)
 # Spack stuff
 # Run this on artemis to ensure all the packages are loaded correctly
 # Install these however you want. Gcc version shouldn't matter.
-spack load openmpi%gcc@7.4.0
-spack load netlib-scalapack%gcc@7.4.0
-spack load eigen%gcc@7.4.0
+spack load openmpi%gcc@7.5.0
+spack load netlib-scalapack%gcc@7.5.0
+spack load eigen%gcc@7.5.0
 
 # ELPA
 # spack load elpa%gcc@7.4.0 # Installing elpa errored out for me

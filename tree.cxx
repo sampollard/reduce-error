@@ -6,7 +6,7 @@
  * 1. make an array of n
  */
 
-#include "tree.h"
+#include "tree.hxx"
 
 /* Provide the number of remaining non-leaf nodes and the index of your current
  * node. */
