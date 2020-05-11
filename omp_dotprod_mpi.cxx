@@ -18,7 +18,7 @@
 #include <stdbool.h>
 
 #include "rand.hxx"
-#include "tree.hxx"
+#include "assoc.hxx"
 #include "mpi_op.hxx"
 
 /* Define length of dot product vectors */
@@ -28,7 +28,8 @@
 #define RAND_01a() (unif_rand_R())
 #define RAND_01b() (unif_rand_R()*2 - 1.0)
 
-double associative_sum_rand(double *A, long int n, int seed);
+template <typename T>
+T associative_sum_rand(T* A, long n, int seed);
 
 int main (int argc, char* argv[])
 {
@@ -124,11 +125,9 @@ int main (int argc, char* argv[])
 			can_mpi_sum += rank_sum[i];
 		}
 		// Generate a random summation
-		/*
-		 * rassoc_sum = associative_sum_rand(rank_sum, numtasks, 1);
-		 * pv.d = rassoc_sum;
-		 * printf("Random assocs:     dot(x,y) =\t%a\t0x%lx\n", rassoc_sum, pv.u);
-		 */
+		rassoc_sum = associative_sum_rand<double>(rank_sum, numtasks, 1);
+		pv.d = rassoc_sum;
+		printf("Random assocs:     dot(x,y) =\t%a\t0x%lx\n", rassoc_sum, pv.u);
 		pv.d = par_sum;
 		printf("MPI:               dot(x,y) =\t%a\t0x%lx\n", par_sum, pv.u);
 		pv.d = can_mpi_sum;
@@ -153,8 +152,15 @@ done:
  * array, where C_n is the nth Catalan number. This function has the side-effect
  * of setting the seed and calling rand() many times.
  */
-double associative_sum_rand(double *A, long int n, int seed)
+template <typename T>
+T associative_sum_rand(T* A, long int n, int seed)
 {
 	srand(seed);
-	return sample_tree_binary(A, n);
+	tree<T> t;
+	try {
+		t = fill_random_kary_tree<T>(2, A, n);
+	} catch (int e) {
+		return 0.0/0.0;
+	}
+	return sum_tree<T>(t);
 }

@@ -1,8 +1,8 @@
 # Makefile for MPI reduction tests
 # Make sure to do spack load openmpi
 
-EXTRA_SOURCES = rand.cxx tree.cxx mpi_op.cxx
-HEADERS = rand.hxx mpi_op.hxx tree.hxx
+EXTRA_SOURCES = rand.cxx mpi_op.cxx
+HEADERS = rand.hxx mpi_op.hxx assoc.hxx
 TARGETS = mpi_pi_reduce omp_dotprod_mpi
 
 # MPI Modular Component Architecture commands
@@ -14,23 +14,26 @@ NUM_PROCS = 16
 #MPICXX ?= mpicxx
 MPICXX = smpicxx
 
-CFLAGS += -Wall
+CXXFLAGS += -Wall -g
 VECLEN = 1440
 
 # Shouldn't need to change
-EXTRA_OBJS = $(EXTRA_SOURCES:.cxx=.o)
+OBJECTS = $(EXTRA_SOURCES:.cxx=.o)
 TARGET_OBJS = $(TARGETS:=.o)
 
 all : $(TARGETS)
 
 %.o : %.cxx
-	$(MPICXX) $(CFLAGS) -c $^
+	$(MPICXX) $(CXXFLAGS) -c $^
 
-mpi_pi_reduce : $(EXTRA_OBJS) mpi_pi_reduce.o
-	$(MPICXX) $(CFLAGS) -o $@ $^
+mpi_pi_reduce: mpi_pi_reduce.o rand.o
+	$(MPICXX) $(CXXFLAGS) -o $@ $^
 
-omp_dotprod_mpi : $(EXTRA_OBJS) omp_dotprod_mpi.o 
-	$(MPICXX) $(CFLAGS) -o $@ $^
+omp_dotprod_mpi.o : omp_dotprod_mpi.cxx
+	$(MPICXX) $(CXXFLAGS) -c $^
+
+omp_dotprod_mpi : $(OBJECTS) omp_dotprod_mpi.o rand.o mpi_op.o
+	$(MPICXX) $(CXXFLAGS) -o $@ $^
 
 # OpenMPI MPI_Reduce Algorithms
 OMPI_ALGOS = 0 1 2 3 4 5 6
@@ -72,8 +75,8 @@ test : $(TARGETS)
 
 
 clean :
-	$(RM) $(TARGETS) $(TARGET_OBJS) $(EXTRA_OBJS) $(HEADERS:=.gch)
+	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch)
 
 # Dependency list
-$(EXTRA_OBJS) $(TARGET_OBJS): rand.hxx mpi_op.hxx
+$(OBJECTS) $(TARGET_OBJS): rand.hxx mpi_op.hxx assoc.hxx
 
