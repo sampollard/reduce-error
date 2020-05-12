@@ -3,7 +3,7 @@
 
 EXTRA_SOURCES = rand.cxx mpi_op.cxx
 HEADERS = rand.hxx mpi_op.hxx assoc.hxx
-TARGETS = mpi_pi_reduce omp_dotprod_mpi
+TARGETS = mpi_pi_reduce dotprod_mpi
 
 # MPI Modular Component Architecture commands
 VERBOSITY = coll_base_verbose 0
@@ -29,10 +29,10 @@ all : $(TARGETS)
 mpi_pi_reduce: mpi_pi_reduce.o rand.o
 	$(MPICXX) $(CXXFLAGS) -o $@ $^
 
-omp_dotprod_mpi.o : omp_dotprod_mpi.cxx
+dotprod_mpi.o : dotprod_mpi.cxx
 	$(MPICXX) $(CXXFLAGS) -c $^
 
-omp_dotprod_mpi : $(OBJECTS) omp_dotprod_mpi.o rand.o mpi_op.o
+dotprod_mpi : $(OBJECTS) dotprod_mpi.o rand.o mpi_op.o assoc.hxx
 	$(MPICXX) $(CXXFLAGS) -o $@ $^
 
 # OpenMPI MPI_Reduce Algorithms
@@ -52,10 +52,10 @@ MPI_REDUCE_ALGOS = default ompi mpich mvapich2 impi automatic \
 
 .PHONY : quick sim test clean
 quick : $(TARGETS)
-	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi $(VECLEN)
-	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi $(VECLEN)
-	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi $(VECLEN)
-	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./omp_dotprod_mpi $(VECLEN)
+	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN)
+	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN)
+	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN)
+	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN)
 
 sim : $(TARGETS)
 	$(foreach algo,$(MPI_REDUCE_ALGOS), \
@@ -63,7 +63,7 @@ sim : $(TARGETS)
 			--cfg=smpi/host-speed:20000000 \
 			--cfg=smpi/reduce:$(algo) \
 			--log=smpi_colls.threshold:debug \
-			./omp_dotprod_mpi $(VECLEN);)
+			./dotprod_mpi $(VECLEN);)
 
 test : $(TARGETS)
 	$(foreach algo,$(ALGOS),\
@@ -71,12 +71,12 @@ test : $(TARGETS)
 		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) mpi_pi_reduce;)
 	$(foreach algo,$(ALGOS),\
 		echo Reduction algorithm $(algo) ; \
-		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) omp_dotprod_mpi $(VECLEN);)
+		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) dotprod_mpi $(VECLEN);)
 
 
 clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch)
 
 # Dependency list
-$(OBJECTS) $(TARGET_OBJS): rand.hxx mpi_op.hxx assoc.hxx
-
+$(OBJECTS) $(TARGET_OBJS): $(HEADERS)
+assoc.hxx: assoc.txx

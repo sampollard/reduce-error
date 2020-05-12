@@ -1,9 +1,9 @@
 /*****************************************************************************
-* FILE: omp_dotprod_mpi.c
+* FILE: dotprod_mpi.cxx
 * DESCRIPTION:
 *   This simple program is the MPI version of a dot product and the third
 *   of four codes used to show the progression from a serial program to a
-*   hybrid MPI/OpenMP program.  The relevant codes are:
+*   hybrid MPI/OpenMP program.  The (original) relevant codes are:
 *      - omp_dotprod_serial.c  - Serial version
 *      - omp_dotprod_openmp.c  - OpenMP only version
 *      + omp_dotprod_mpi.c     - MPI only version
@@ -29,7 +29,7 @@
 #define RAND_01b() (unif_rand_R()*2 - 1.0)
 
 template <typename T>
-T associative_sum_rand(T* A, long n, int seed);
+T associative_sum_rand(long n, T* A, int seed);
 
 int main (int argc, char* argv[])
 {
@@ -38,8 +38,8 @@ int main (int argc, char* argv[])
 	double *a, *b, *as, *bs, *rank_sum;
 	double mysum, par_sum, can_mpi_sum, rassoc_sum;
 	union udouble {
-	  double d;
-	  unsigned long u;
+		double d;
+		unsigned long u;
 	} pv;
 
 
@@ -125,7 +125,7 @@ int main (int argc, char* argv[])
 			can_mpi_sum += rank_sum[i];
 		}
 		// Generate a random summation
-		rassoc_sum = associative_sum_rand<double>(rank_sum, numtasks, 1);
+		rassoc_sum = associative_sum_rand<double>(numtasks, rank_sum, 1);
 		pv.d = rassoc_sum;
 		printf("Random assocs:     dot(x,y) =\t%a\t0x%lx\n", rassoc_sum, pv.u);
 		pv.d = par_sum;
@@ -153,14 +153,14 @@ done:
  * of setting the seed and calling rand() many times.
  */
 template <typename T>
-T associative_sum_rand(T* A, long int n, int seed)
+T associative_sum_rand(long n, T* A, int seed)
 {
 	srand(seed);
-	tree<T> t;
+	random_kary_tree<T> t;
 	try {
-		t = fill_random_kary_tree<T>(2, A, n);
+		t = random_kary_tree<T>(2, n, A);
 	} catch (int e) {
 		return 0.0/0.0;
 	}
-	return sum_tree<T>(t);
+	return t.sum_tree();
 }
