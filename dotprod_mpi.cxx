@@ -28,6 +28,15 @@
 #define RAND_01a() (unif_rand_R())
 #define RAND_01b() (unif_rand_R()*2 - 1.0)
 
+/* This function generates a random tree, then sums the elements in that order
+ * For example,
+ *        (a+b)+c
+ *         /  \
+ *     (a+b)   \
+ *      / \     \
+ *    /   \      \
+ *   a    b      c
+ */
 template <typename T>
 T associative_sum_rand(long n, T* A, int seed);
 
@@ -156,9 +165,9 @@ template <typename T>
 T associative_sum_rand(long n, T* A, int seed)
 {
 	srand(seed);
-	random_kary_tree<T> t;
+	random_kary_tree t;
 	try {
-		t = random_kary_tree<T>(2, n, A);
+		t = random_kary_tree(2, n, A);
 	} catch (int e) {
 		return 0.0/0.0;
 	}
