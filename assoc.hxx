@@ -31,7 +31,7 @@ class random_kary_tree {
 		FLOAT_T sum_tree();       // Add all leaves. Sum is at the root.
 		FLOAT_T multiply_tree();  // Multiply all leaves. Product is at the root.
 		changed_t fill_binary_tree(
-			long irem, tree<FLOAT_T>::iterator parent, long lrem, FLOAT_T* A);
+			long irem, tree<FLOAT_T>::iterator current, long lrem);
 	private:
 		tree<FLOAT_T> t;     // The tree
 		int k_;              // Fan-out of tree

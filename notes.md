@@ -129,9 +129,10 @@ I installed simgrid using
 wget https://framagit.org/simgrid/simgrid/uploads/0365f13697fb26eae8c20fc234c5af0e/SimGrid-3.25.tar.gz
 tar -xvf SimGrid-3.25.tar.gz
 cd SimGrid
-cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local/bin .
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local/simgrid .
 make
 make install
+export "PATH=$PATH:$HOME/.local/simgrid/bin"
 ```
 
 Now, I can't get differing results using regular running. Time to simulate.
@@ -188,3 +189,6 @@ I forgot a few important issues, namely:
 
 However, I was able to add a custom MPI Operation, and that still resulted in
 different answers.
+
+## 5/13: Template and Linking Mishaps
+[What a doozy](https://github.com/simgrid/simgrid/issues/342)

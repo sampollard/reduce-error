@@ -17,7 +17,7 @@ MPICXX = smpicxx
 VECLEN = 1440
 
 CXXFLAGS += -Wall -g
-LDFLAGS += -L/home/users/spollard/.local/lib -Wl,-rpath=/home/users/spollard/.local/lib
+LDFLAGS += -L$${HOME}/.local/simgrid/lib -Wl,-rpath=$${HOME}/.local/simgrid/lib
 
 # Shouldn't need to change
 OBJECTS = $(EXTRA_SOURCES:.cxx=.o)
