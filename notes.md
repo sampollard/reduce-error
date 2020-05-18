@@ -192,3 +192,11 @@ different answers.
 
 ## 5/13: Template and Linking Mishaps
 [What a doozy](https://github.com/simgrid/simgrid/issues/342)
+
+## 5/17
+I figured out finally how to get the help info. You have to act as if you're
+running a whole correct program. Here's an example:
+```
+smpirun --cfg=network/model:help -hostfile topologies/hostfile-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./dotprod_mpi 14400 torus-2-2-4
+```
+
