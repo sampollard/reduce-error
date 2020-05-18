@@ -199,4 +199,8 @@ running a whole correct program. Here's an example:
 ```
 smpirun --cfg=network/model:help -hostfile topologies/hostfile-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:20000000 --cfg=smpi/reduce:ompi ./dotprod_mpi 14400 torus-2-2-4
 ```
+Some other simgrid info: basically simgrid runs the computation on the host machine, then "scales" this to the simulated machine. I tried to add `--cfg=smpi/simulate-computation:no` because I don't care about the runtime on the new, imaginary system. However, this didn't work. I suspect it's because I never do anything with the simulation part in the first place.
 
+However, we estimate 3 Gflops (2.40 GHz -> 3.7 Turboboost) is an underestimation. [Here](https://www.top500.org/system/179086) suggests flops/core is about 50 Gflops/s, giving 1,015 Gflops/s per CPU. This is only serial `accum += a * b` though, so we use a much lower number.
+
+I added duplicate entries for hostfiles just to simplify the makefile and make things _slightly_ more modular.

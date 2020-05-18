@@ -9,7 +9,7 @@
 *      + omp_dotprod_mpi.c     - MPI only version
 *      - omp_dotprod_hybrid.c  - Hybrid MPI and OpenMP version
 * SOURCE: Blaise Barney
-* LAST REVISED: 5/7/20 - Samuel Pollard
+* LAST REVISED: 5/18/20 - Samuel Pollard
 ******************************************************************************/
 #define USAGE "mpirun -np <N> ./dotprod_mpi <veclen> <topology>"
 
@@ -45,7 +45,7 @@ int main (int argc, char* argv[])
 	int taskid, numtasks;
 	long i, j, chunk, len, rc=0;
 	double *a, *b, *as, *bs, *rank_sum;
-	double mysum, nc_sum, par_sum, can_mpi_sum, rassoc_sum;
+	double mysum, nc_sum, par_sum, can_mpi_sum; //, rassoc_sum;
 	double starttime, endtime, ptime;
 	union udouble {
 		double d;
@@ -59,12 +59,13 @@ int main (int argc, char* argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
 
 	len = atol(argv[1]);
-	if (len <= 0 || len % numtasks != 0 || argc != 3) {
+	if (len <= 0 || len % numtasks != 0 || argc != 4) {
 		if (taskid == 0) {
 			fprintf(stderr, USAGE "\n");
 			fprintf(stderr,
-					"Number of MPI ranks (%d) must divide vector size (%ld)\n",
-					numtasks, len);
+			        "Expects 4 args, found %d\n"
+			        "Number of MPI ranks (%d) must divide vector size (%ld)\n",
+			        argc, numtasks, len);
 		}
 		rc = 1;
 		goto done;
@@ -132,21 +133,21 @@ int main (int argc, char* argv[])
 		for (i = 0; i < numtasks; i++) {
 			can_mpi_sum += rank_sum[i];
 		}
-		printf("numtasks\tveclen\ttopology\talgorithm\tparallel time\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
+		// Header
+		printf("numtasks\tveclen\ttopology\treduction algorithm\treduction order\tparallel time\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
 
-		// Generate a random summation
-
+		// Generate a random summation (TODO)
 		// rassoc_sum = associative_sum_rand<double>(numtasks, rank_sum, 1);
 		// pv.d = rassoc_sum;
 		// printf("Random assocs:     dot(x,y) =\t%a\t0x%lx\n", rassoc_sum, pv.u);
 		pv.d = par_sum;
-		printf("% 5d\t% 10ld\t%s\tMPI Reduce       \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], ptime, par_sum, par_sum, pv.u);
+		printf("% 5d\t% 10ld\t%s\t%s\tMPI Reduce       \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, par_sum, par_sum, pv.u);
 		pv.d = nc_sum;
-		printf("% 5d\t% 10ld\t%s\tMPI NC sum       \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], ptime, nc_sum, nc_sum, pv.u);
+		printf("% 5d\t% 10ld\t%s\t%s\tMPI NC sum       \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, nc_sum, nc_sum, pv.u);
 		pv.d = can_mpi_sum;
-		printf("% 5d\t% 10ld\t%s\tCanonical MPI    \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], ptime, can_mpi_sum, can_mpi_sum, pv.u);
+		printf("% 5d\t% 10ld\t%s\t%s\tCanonical MPI    \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, can_mpi_sum, can_mpi_sum, pv.u);
 		pv.d = mysum;
-		printf("% 5d\t% 10ld\t%s\tSerial left assoc\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], ptime, mysum, mysum, pv.u);
+		printf("% 5d\t% 10ld\t%s\t%s\tSerial left assoc\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, mysum, mysum, pv.u);
 	}
 
 	free(a);
