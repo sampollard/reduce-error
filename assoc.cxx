@@ -18,7 +18,8 @@ random_kary_tree::random_kary_tree(int k, long n, FLOAT_T* A) : k_(k), n_(n), A_
 	}
 	irem = n-1;
 	lrem = n;
-	changed_t v = fill_binary_tree(irem, root, lrem);
+	changed_t v = fill_balanced_binary_tree(irem, root, lrem);
+	// changed_t v = fill_binary_tree(irem, root, lrem);
 	if (v.inner != irem || v.leaf != lrem) {
 		fprintf(stderr, "Didn't fill tree correctly: (irem=%ld lrem=%ld, n=%ld)\n",
 		        v.inner, v.leaf, n_);
@@ -34,6 +35,12 @@ FLOAT_T random_kary_tree::sum_tree()
 FLOAT_T random_kary_tree::multiply_tree()
 {
 	return 0.0/0.0;
+}
+
+changed_t random_kary_tree::fill_balanced_binary_tree(
+		long irem, tree<FLOAT_T>::iterator current, long lrem)
+{
+	return (changed_t) {.inner = 0, .leaf = 0};
 }
 
 /* Helper, recursive function for fill_random_kary_tree */

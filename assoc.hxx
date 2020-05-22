@@ -33,6 +33,8 @@ class random_kary_tree {
 		changed_t fill_binary_tree(
 			long irem, tree<FLOAT_T>::iterator current, long lrem);
 	private:
+		changed_t fill_balanced_binary_tree(
+			long irem, tree<FLOAT_T>::iterator current, long lrem);
 		tree<FLOAT_T> t;     // The tree
 		int k_;              // Fan-out of tree
 		long n_;             // Size of array of elements to insert

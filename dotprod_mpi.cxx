@@ -155,6 +155,7 @@ int main (int argc, char* argv[])
 	free(as);
 	free(bs);
 	free(rank_sum);
+	// MPI_Op_free(nc_sum_op); // Doesn't work with SimGrid
 
 done:
 	MPI_Finalize();

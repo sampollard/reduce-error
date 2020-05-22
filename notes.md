@@ -204,3 +204,11 @@ Some other simgrid info: basically simgrid runs the computation on the host mach
 However, we estimate 3 Gflops (2.40 GHz -> 3.7 Turboboost) is an underestimation. [Here](https://www.top500.org/system/179086) suggests flops/core is about 50 Gflops/s, giving 1,015 Gflops/s per CPU. This is only serial `accum += a * b` though, so we use a much lower number.
 
 I added duplicate entries for hostfiles just to simplify the makefile and make things _slightly_ more modular.
+
+## 5/22
+If you run
+```
+smpirun -hostfile topologies/hostfile-torus-2-4-9.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:3000000000 --cfg=smpi/reduce:mvapich2_knomial --log=root.thres:critical ./dotprod_mpi 720 torus-2-4-9 mvapich2_knomial
+```
+
+You get different answers for using a custom MPI operation, noncommutative sum.

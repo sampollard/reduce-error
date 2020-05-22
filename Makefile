@@ -15,7 +15,7 @@ VERBOSITY = coll_base_verbose 0
 # MPI Flags
 NUM_PROCS = 16
 VECLEN = 14400
-VECLEN_BIG = 7200000
+VECLEN_BIG = 72000000
 
 # SimGrid options
 #LOG_LEVEL = --log=smpi_colls.threshold:debug
@@ -58,7 +58,7 @@ OMPI_ALGOS = 0 1 2 3 4 5 6 7
 # 6:"in-order_binary"
 # 7:"rabenseifner"
 
-.PHONY : quick sim ompi clean
+.PHONY : quick sim ompi clean differ
 quick : $(TARGETS)
 	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-2-4
 	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-16
@@ -82,6 +82,10 @@ sim : $(TARGETS)
 				$(LOG_LEVEL) \
 				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo);) \
 		)
+
+# Potential bug in SimGrid
+differ : dotprod_mpi
+	smpirun -hostfile topologies/hostfile-torus-2-4-9.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:3000000000 --cfg=smpi/reduce:mvapich2_knomial --log=root.thres:critical ./dotprod_mpi 720 torus-2-4-9 mvapich2_knomial
 
 # OpenMPI command line arguments
 ompi: $(TARGETS)
