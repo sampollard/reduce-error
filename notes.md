@@ -212,3 +212,45 @@ smpirun -hostfile topologies/hostfile-torus-2-4-9.txt -platform topologies/torus
 ```
 
 You get different answers for using a custom MPI operation, noncommutative sum.
+
+# Euler2d
+
+`pkestene/euler_kokkos` didn't work, trying the non-mpi version:
+```
+spack load openmpi@4.0.3
+git clone https://github.com/pkestene/euler2d_kokkos
+cd euler2d_kokkos
+git submodule init
+git submodule update
+mkdir -p build
+cd build
+cmake -DUSE_MPI=ON -DKokkos_ENABLE_HWLOC=ON -DKokkos_ENABLE_OPENMP=OFF ..
+make -j 4
+```
+
+Got the non-mpi version to run. From the paper,
+
+> using a fixed time step of ∆t ≈ 2.8e-4, 
+
+but we don't know how long the simulation runs for :facepalm:
+10,000 timesteps for 3 seconds is on the same order of magnitude.
+
+Submitted [bug](https://github.com/pkestene/euler_kokkos/issues/1)
+for `euler_kokkos`, got it to build via:
+```
+spack load openmpi@4.0.3
+git clone https://github.com/pkestene/euler2d_kokkos
+cd euler_kokkos
+git submodule init
+git submodule update
+mkdir -p build
+cd build
+cmake -DUSE_MPI=ON -DKokkos_ENABLE_HWLOC=ON -DKokkos_ENABLE_OPENMP=OFF ..
+make -j 4
+```
+which compiled! Now to get it to run, do
+```
+mpirun -np 6 src/euler_kokkos test/io/test_io_2d.ini
+```
+(`-np = my * mz * mz` in the `.ini`)
+
