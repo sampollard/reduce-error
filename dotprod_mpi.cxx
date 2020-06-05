@@ -62,6 +62,8 @@ int main (int argc, char* argv[])
 	if (len <= 0 || len % numtasks != 0 || argc != 4) {
 		if (taskid == 0) {
 			fprintf(stderr, USAGE "\n");
+		}
+		if (len % numtasks != 0) {
 			fprintf(stderr,
 			        "Expects 4 args, found %d\n"
 			        "Number of MPI ranks (%d) must divide vector size (%ld)\n",

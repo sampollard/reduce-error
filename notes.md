@@ -126,9 +126,11 @@ though I don't know if there's any implementation of this.
 ## Onto SimGrid
 I installed simgrid using
 ```
-wget https://framagit.org/simgrid/simgrid/uploads/0365f13697fb26eae8c20fc234c5af0e/SimGrid-3.25.tar.gz
-tar -xvf SimGrid-3.25.tar.gz
-cd SimGrid
+apt install libboost-stacktrace-dev
+spack install cmake%gcc@7.5.0
+spack load cmake%gcc@7.5.0
+git clone https://github.com/simgrid/simgrid.git
+cd simgrid
 cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local/simgrid .
 make
 make install
@@ -245,7 +247,7 @@ git submodule init
 git submodule update
 mkdir -p build
 cd build
-cmake -DUSE_MPI=ON -DKokkos_ENABLE_HWLOC=ON -DKokkos_ENABLE_OPENMP=OFF ..
+cmake -DUSE_MPI=ON -DKokkos_ENABLE_HWLOC=ON -DKokkos_ENABLE_OPENMP=OFF -DMPI_CXX=smpicxx ..
 make -j 4
 ```
 which compiled! Now to get it to run, do
@@ -254,3 +256,77 @@ mpirun -np 6 src/euler_kokkos test/io/test_io_2d.ini
 ```
 (`-np = my * mz * mz` in the `.ini`)
 
+Now, to get to build with simgrid we have to learn the cmake syntax, which is:
+```
+cmake -DUSE_MPI=ON -DKokkos_ENABLE_HWLOC=ON -DKokkos_ENABLE_OPENMP=OFF \
+	-DCMAKE_LIBRARY_PATH=$HOME/.local/simgrid/lib \
+	-DMPI_CXX_COMPILER=smpicxx -DMPI_C_COMPILER=smpicc ..
+```
+Then run with
+```
+smpirun -hostfile hostfile-torus-2-4-9.txt -platform torus-2-4-9.xml -np 6 \
+	--cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug \
+	src/euler_kokkos test/io/test_io_2d.ini
+```
+which fails with
+```
+Execution failed with code 134.
+and
+bad entry point
+```
+Maybe I need the LD library path stuff?
+
+# Apps
+Petsc or TAU
+Driven cavity - good example. Has MPI reduces and such. Driven cavity in petsc
+examples (snes). Also linear solvers.
+
+Chapter on just saying limitations - e.g. compcert can't do this optimization or something.
+Can a NaN become a non-nan?
+
+# Petsc
+
+- Look [here](https://www.mcs.anl.gov/petsc/documentation/installation.html) for resources
+- `--with-mpi-dir` at first I thought was only for MPICH but appears to not be true
+- You don't want the compilers to be `smpi` ones.
+- tried `./configure --with-mpi-dir=$HOME/.local/simgrid/bin --with-mpiexec=smpirun --with-cc=gcc --with-fc=gfortran --with-cxx=g++`
+
+Finally,
+```
+./configure --prefix=$HOME/.local/petsc \
+	--LDFLAGS="-L$HOME/.local/simgrid/lib -Wl,-rpath=$HOME/.local/simgrid/lib" \
+	--with-mpi-lib=$HOME/.local/simgrid/lib/libsimgrid.so \
+	--with-mpi-include=$HOME/.local/simgrid/include/:$HOME/.local/simgrid/include/smpi \
+	--with-mpiexec='smpirun -hostfile /home/users/spollard/mpi-error/topologies/hostfile-fattree-16.txt -platform /home/users/spollard/mpi-error/topologies/fattree-16.xml --cfg=smpi/host-speed:20000000' \
+	--with-cc=gcc --with-fc=gfortran --with-cxx=g++
+```
+worked. Then built with
+```
+make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug all test
+make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug install
+```
+
+Then
+```
+export PETSC_DIR=/home/users/spollard/.local/petsc
+cd $PETSC_DIR/share/petsc/examples/src/ts/tutorials
+export LD_LIBRARY
+make ex26
+smpirun -np 16 \
+	-hostfile $HOME/mpi-error/topologies/hostfile-fattree-16.txt -platform $HOME/mpi-error/topologies/fattree-16.xml \
+	--cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug \
+	./ex26
+```
+
+But this gets the error
+```
+[node-0.hpcl.cs.uoregon.edu:0:(1) 0.000000] /home/users/spollard/mpi-error/simgrid/src/smpi/internals/smpi_global.cpp:501: [root/CRITICAL] Could not resolve entry point
+Backtrace (displayed in actor 0):
+ 0# simgrid::xbt::Backtrace::Backtrace() at ./src/xbt/backtrace.cpp:68
+ 1# xbt_backtrace_display_current at ./src/xbt/backtrace.cpp:33
+ 2# operator() at ./src/smpi/internals/smpi_global.cpp:501
+ 3# smx_ctx_wrapper at ./src/kernel/context/ContextSwapped.cpp:48
+
+./ex26 --cfg=smpi/privatization:1 --cfg=surf/precision:1e-9 --cfg=network/model:SMPI --cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug /home/users/spollard/mpi-error/topologies/fattree-16.xml smpitmp-appjBGHMD
+Execution failed with code 134.
+```

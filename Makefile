@@ -60,10 +60,10 @@ OMPI_ALGOS = 0 1 2 3 4 5 6 7
 
 .PHONY : quick sim ompi clean differ
 quick : $(TARGETS)
-	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-2-4
-	smpirun -hostfile topologies/hostfile-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-16
-	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-72
-	smpirun -hostfile topologies/hostfile-72.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-4-9
+	smpirun -hostfile topologies/hostfile-fattree-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-2-4 auto
+	smpirun -hostfile topologies/hostfile-fattree-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-16 auto
+	smpirun -hostfile topologies/hostfile-fattree-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-72 auto
+	smpirun -hostfile topologies/hostfile-fattree-72.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-4-9 auto
 
 sim : $(TARGETS)
 	$(foreach algo,$(MPI_REDUCE_ALGOS), \
@@ -73,15 +73,17 @@ sim : $(TARGETS)
 				--cfg=smpi/host-speed:$(FLOPS) \
 				--cfg=smpi/reduce:$(algo) \
 				$(LOG_LEVEL) \
-				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo);) \
+				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo);
+		) \
 		$(foreach topo,$(TOPOLOGY_72), \
 			smpirun -hostfile topologies/hostfile-$(topo).txt -platform topologies/$(topo).xml \
 				-np 72 \
 				--cfg=smpi/host-speed:$(FLOPS) \
 				--cfg=smpi/reduce:$(algo) \
 				$(LOG_LEVEL) \
-				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo);) \
-		)
+				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo);
+		) \
+	)
 
 # Potential bug in SimGrid
 differ : dotprod_mpi
