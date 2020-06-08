@@ -126,13 +126,15 @@ though I don't know if there's any implementation of this.
 ## Onto SimGrid
 I installed simgrid using
 ```
-apt install libboost-stacktrace-dev
+# Need boost and libboost-stacktrace-dev
 spack install cmake%gcc@7.5.0
 spack load cmake%gcc@7.5.0
 git clone https://github.com/simgrid/simgrid.git
 cd simgrid
-cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local/simgrid .
-make
+mkdir -p build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local/simgrid ..
+make -j
 make install
 export "PATH=$PATH:$HOME/.local/simgrid/bin"
 ```
@@ -276,7 +278,7 @@ bad entry point
 ```
 Maybe I need the LD library path stuff?
 
-# Apps
+# Apps To Try
 Petsc or TAU
 Driven cavity - good example. Has MPI reduces and such. Driven cavity in petsc
 examples (snes). Also linear solvers.
@@ -284,33 +286,46 @@ examples (snes). Also linear solvers.
 Chapter on just saying limitations - e.g. compcert can't do this optimization or something.
 Can a NaN become a non-nan?
 
-# Petsc
+# Simgrid & Petsc
 
 - Look [here](https://www.mcs.anl.gov/petsc/documentation/installation.html) for resources
 - `--with-mpi-dir` at first I thought was only for MPICH but appears to not be true
 - You don't want the compilers to be `smpi` ones.
 - tried `./configure --with-mpi-dir=$HOME/.local/simgrid/bin --with-mpiexec=smpirun --with-cc=gcc --with-fc=gfortran --with-cxx=g++`
+- Fortran `smpif90` causes problems, so we're trying to not use that at all
+- Tried building with `export CFLAGS='SMPI_NO_OVERRIDE_MALLOC=1'` but that didn't help.
+- Getting some weird error with:
+  ```
+   /home/users/spollard/.local/simgrid/include/smpi/smpi_helpers.h:36:48: error: expected declaration specifiers or ‘...’ before ‘(’ token
+   #define malloc(x) smpi_shared_malloc_intercept((x), __FILE__, __LINE__)
+  ```
+  and some other stuff.
+- (also tried this: `--with-mpiexec='smpirun -hostfile /home/users/spollard/mpi-error/topologies/hostfile-fattree-16.txt -platform /home/users/spollard/mpi-error/topologies/fattree-16.xml --cfg=smpi/host-speed:20000000' \`
+- Try `SMPI_PRETEND_CC=1 ./configure ... --with-cflags='SMPI_NO_OVERRIDE_MALLOC=1'` tomorrow ---- done
+- First try:
+ ```
+ export SMPI_PRETEND_CC=1
+ ./configure --prefix=$HOME/.local/petsc \
+ 	--LDFLAGS="-L$HOME/.local/simgrid/lib -Wl,-rpath=$HOME/.local/simgrid/lib" \
+ 	--with-mpi-lib=$HOME/.local/simgrid/lib/libsimgrid.so \
+ 	--with-mpi-include=$HOME/.local/simgrid/include/:$HOME/.local/simgrid/include/smpi \
+ 	--with-cflags='SMPI_NO_OVERRIDE_MALLOC=1' \
+ 	--with-fortran-bindings=0 \
+ 	--with-cc=smpicc --with-cxx=smpicxx --with-fc=gfortran 
+ ```
+after a chat on the `#simgrid` debian IRC. Then I built with
 
-Finally,
 ```
-./configure --prefix=$HOME/.local/petsc \
-	--LDFLAGS="-L$HOME/.local/simgrid/lib -Wl,-rpath=$HOME/.local/simgrid/lib" \
-	--with-mpi-lib=$HOME/.local/simgrid/lib/libsimgrid.so \
-	--with-mpi-include=$HOME/.local/simgrid/include/:$HOME/.local/simgrid/include/smpi \
-	--with-mpiexec='smpirun -hostfile /home/users/spollard/mpi-error/topologies/hostfile-fattree-16.txt -platform /home/users/spollard/mpi-error/topologies/fattree-16.xml --cfg=smpi/host-speed:20000000' \
-	--with-cc=gcc --with-fc=gfortran --with-cxx=g++
-```
-worked. Then built with
-```
-make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug all test
+unset SMPI_PRETEND_CC
+make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug all
 make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug install
 ```
+This didn't work.
 
 Then
 ```
 export PETSC_DIR=/home/users/spollard/.local/petsc
 cd $PETSC_DIR/share/petsc/examples/src/ts/tutorials
-export LD_LIBRARY
 make ex26
 smpirun -np 16 \
 	-hostfile $HOME/mpi-error/topologies/hostfile-fattree-16.txt -platform $HOME/mpi-error/topologies/fattree-16.xml \
@@ -330,3 +345,43 @@ Backtrace (displayed in actor 0):
 ./ex26 --cfg=smpi/privatization:1 --cfg=surf/precision:1e-9 --cfg=network/model:SMPI --cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug /home/users/spollard/mpi-error/topologies/fattree-16.xml smpitmp-appjBGHMD
 Execution failed with code 134.
 ```
+
+Chatting with the Simgrid people. They made some fixes, then said: (I had to add --with-fortran-bindings=0)
+
+```
+SMPI_PRETEND_CC=1 ./configure --prefix=$HOME/.local/petsc \
+	--with-cc=smpicc --with-fc=smpif90 --with-cxx=smpicxx --CFLAGS="-DSMPI_NO_OVERRIDE_MALLOC=1" \
+	--with-fortran-bindings=0
+SMPI_NO_UNDEFINED_CHECK=1 make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug all
+SMPI_NO_UNDEFINED_CHECK=1 make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug install
+```
+Now, the unit tests will fail (because `smpirun` can't be dropped in for `mpirun`, it needs host and topology files)
+
+## Simgrid Troubleshooting
+`error code 134` and `bad entry point` - This is probably a miscompilation issue. You can check that
+you are using `smpicc` instead of `mpicc`.
+
+```
+[0]PETSC ERROR: --------------------- Error Message --------------------------------------------------------------
+[0]PETSC ERROR: Object is in wrong state
+[0]PETSC ERROR: Cannot call this routine more than once, it can only be called in PetscInitialize()
+[0]PETSC ERROR: See https://www.mcs.anl.gov/petsc/documentation/faq.html for trouble shooting.
+[0]PETSC ERROR: Petsc Release Version 3.13.2, unknown
+[0]PETSC ERROR: ./ex1 on a  named artemis by spollard Wed Dec 31 16:00:00 1969
+[0]PETSC ERROR: Configure options --prefix=/home/users/spollard/.local/petsc --with-cc=smpicc --with-fc=smpif90 --with-cxx=smpicxx --CFLAGS=-DSMPI_NO_OVERRIDE_MALLOC=1 --with-fortran-bindings=0
+[0]PETSC ERROR: #43 PetscMallocSetDebug() line 889 in /home/users/spollard/mpi-error/petsc/src/sys/memory/mtr.c
+[0]PETSC ERROR: #44 PetscOptionsCheckInitial_Private() line 419 in /home/users/spollard/mpi-error/petsc/src/sys/objects/init.c
+[0]PETSC ERROR: #45 PetscInitialize() line 1004 in /home/users/spollard/mpi-error/petsc/src/sys/objects/pinit.c
+[node-15.hpcl.cs.uoregon.edu:15:(16) 0.002423] /home/users/spollard/mpi-error/simgrid/src/smpi/internals/smpi_global.cpp:334: [smpi_kernel/WARNING] SMPI process did not return 0. Return value : 73
+[0.002423] /home/users/spollard/mpi-error/simgrid/src/simix/smx_global.cpp:554: [simix_kernel/CRITICAL] Oops! Deadlock or code not perfectly clean.
+[0.002423] [simix_kernel/INFO] 1 actors are still running, waiting for something.
+[0.002423] [simix_kernel/INFO] Legend of the following listing: "Actor <pid> (<name>@<host>): <status>"
+[0.002423] [simix_kernel/INFO] Actor 1 (0@node-0.hpcl.cs.uoregon.edu)
+[0.002423] [smpi/INFO] Stalling SMPI instance: smpirun. Do all your MPI ranks call MPI_Finalize()?
+./ex1 --cfg=smpi/privatization:1 --cfg=surf/precision:1e-9 --cfg=network/model:SMPI --cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug /home/users/spollard/mpi-error/topologies/fattree-16.xml smpitmp-appWI5fQZ
+Execution failed with code 73.
+```
+
+From degomme:
+>  yes I would advise to try another one in the meantime, as petsc is a huge beast, and relies on quite rarely used MPI calls that are not our strength .. But it's a nice way for us to debug smpi.
+
