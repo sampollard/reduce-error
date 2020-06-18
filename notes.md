@@ -126,7 +126,7 @@ though I don't know if there's any implementation of this.
 ## Onto SimGrid
 I installed simgrid using
 ```
-# Need boost and libboost-stacktrace-dev
+# Need boost, libboost-stacktrace-dev is helpful
 spack install cmake%gcc@7.5.0
 spack load cmake%gcc@7.5.0
 git clone https://github.com/simgrid/simgrid.git
@@ -173,7 +173,7 @@ smpirun -hostfile ../hostfile-tree.txt -platform ../platform-tree.xml -np 2 \
 	--cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug \
 	bin/eigenkernel_app -s general_elpa1 matrix/ELSES_MATRIX_BNZ30_A.mtx matrix/ELSES_MATRIX_BNZ30_B.mtx
 ```
-Still getting some segfaults... this is stupid. Giving up for now.
+Still getting some segfaults... Giving up for now.
 
 ## Analytical measurement
 
@@ -221,6 +221,7 @@ You get different answers for using a custom MPI operation, noncommutative sum.
 
 `pkestene/euler_kokkos` didn't work, trying the non-mpi version:
 ```
+# OBSOLETE
 spack load openmpi@4.0.3
 git clone https://github.com/pkestene/euler2d_kokkos
 cd euler2d_kokkos
@@ -242,6 +243,7 @@ but we don't know how long the simulation runs for :facepalm:
 Submitted [bug](https://github.com/pkestene/euler_kokkos/issues/1)
 for `euler_kokkos`, got it to build via:
 ```
+# OBSOLETE
 spack load openmpi@4.0.3
 git clone https://github.com/pkestene/euler2d_kokkos
 cd euler_kokkos
@@ -258,15 +260,21 @@ mpirun -np 6 src/euler_kokkos test/io/test_io_2d.ini
 ```
 (`-np = my * mz * mz` in the `.ini`)
 
-Now, to get to build with simgrid we have to learn the cmake syntax, which is:
+Now, to get to build with simgrid we have to learn cmake ):
 ```
-cmake -DUSE_MPI=ON -DKokkos_ENABLE_HWLOC=ON -DKokkos_ENABLE_OPENMP=OFF \
+cp ../simgrid/FindSimGrid.cmake cmake
+spack unload openmpi@4.0.3
+mkdir -p sbuild
+cd sbuild
+SimGrid_PATH=$HOME/.local/simgrid cmake -DUSE_SIMGRID=ON -DUSE_MPI=ON -DKokkos_ENABLE_HWLOC=OFF -DKokkos_ENABLE_OPENMP=OFF \
 	-DCMAKE_LIBRARY_PATH=$HOME/.local/simgrid/lib \
 	-DMPI_CXX_COMPILER=smpicxx -DMPI_C_COMPILER=smpicc ..
+make -j4
 ```
 Then run with
 ```
-smpirun -hostfile hostfile-torus-2-4-9.txt -platform torus-2-4-9.xml -np 6 \
+smpirun -np 6 \
+	-hostfile $HOME/mpi-error/topologies/hostfile-torus-2-4-9.txt -platform $HOME/mpi-error/topologies/torus-2-4-9.xml \
 	--cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug \
 	src/euler_kokkos test/io/test_io_2d.ini
 ```
@@ -301,9 +309,11 @@ Can a NaN become a non-nan?
   ```
   and some other stuff.
 - (also tried this: `--with-mpiexec='smpirun -hostfile /home/users/spollard/mpi-error/topologies/hostfile-fattree-16.txt -platform /home/users/spollard/mpi-error/topologies/fattree-16.xml --cfg=smpi/host-speed:20000000' \`
-- Try `SMPI_PRETEND_CC=1 ./configure ... --with-cflags='SMPI_NO_OVERRIDE_MALLOC=1'` tomorrow ---- done
-- First try:
+- Try `SMPI_PRETEND_CC=1 ./configure ... --with-cflags='SMPI_NO_OVERRIDE_MALLOC=1'` - not quite enough
+- Triied
  ```
+ # DOES NOT WORK
+ unset PETSC_DIR
  export SMPI_PRETEND_CC=1
  ./configure --prefix=$HOME/.local/petsc \
  	--LDFLAGS="-L$HOME/.local/simgrid/lib -Wl,-rpath=$HOME/.local/simgrid/lib" \
@@ -316,15 +326,16 @@ Can a NaN become a non-nan?
 after a chat on the `#simgrid` debian IRC. Then I built with
 
 ```
+# This didn't work
 unset SMPI_PRETEND_CC
 make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug all
 make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug install
 ```
-This didn't work.
 
 Then
 ```
-export PETSC_DIR=/home/users/spollard/.local/petsc
+# This didn't work
+export PETSC_DIR=$HOME/.local/petsc
 cd $PETSC_DIR/share/petsc/examples/src/ts/tutorials
 make ex26
 smpirun -np 16 \
@@ -346,20 +357,40 @@ Backtrace (displayed in actor 0):
 Execution failed with code 134.
 ```
 
-Chatting with the Simgrid people. They made some fixes, then said: (I had to add --with-fortran-bindings=0)
+Chatting with the Simgrid people. They made some fixes, then said: (I had to
+add `--with-fortran-bindings=0`)
 
 ```
+ # This Works!
+unset PETSC_DIR SMPI_PRETEND_CC
 SMPI_PRETEND_CC=1 ./configure --prefix=$HOME/.local/petsc \
 	--with-cc=smpicc --with-fc=smpif90 --with-cxx=smpicxx --CFLAGS="-DSMPI_NO_OVERRIDE_MALLOC=1" \
 	--with-fortran-bindings=0
 SMPI_NO_UNDEFINED_CHECK=1 make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug all
 SMPI_NO_UNDEFINED_CHECK=1 make PETSC_DIR=/home/users/spollard/mpi-error/petsc PETSC_ARCH=arch-linux-c-debug install
 ```
-Now, the unit tests will fail (because `smpirun` can't be dropped in for `mpirun`, it needs host and topology files)
+
+Now, the unit tests will fail (because `smpirun` can't be dropped in for
+`mpirun`, it needs host and topology files). The only thing I was able to
+get working was ex26 with 1 processor. That is:
 
 ## Simgrid Troubleshooting
-`error code 134` and `bad entry point` - This is probably a miscompilation issue. You can check that
-you are using `smpicc` instead of `mpicc`.
+`error code 134` and `could not resolve entry point` - This is probably a
+miscompilation issue. You can check that you are using `smpicc` instead of
+`mpicc`.
+
+If you see things like `MPI_C_HEADER_DIR` pointing to some other mpi header,
+then you need to fix this. If the script has `./configure`, you can just set
+the `LD_LIBRARY_PATH` and and include path accordingly and it should pick
+things up.
+
+Another potential issue is the Cmake of your project might have found some
+other MPI implementation and tried to link to it. You can check this via
+
+```
+cmake <cmake flags> -LA .. | grep '^MPI_'
+```
+
 
 ```
 [0]PETSC ERROR: --------------------- Error Message --------------------------------------------------------------
@@ -384,4 +415,29 @@ Execution failed with code 73.
 
 From degomme:
 >  yes I would advise to try another one in the meantime, as petsc is a huge beast, and relies on quite rarely used MPI calls that are not our strength .. But it's a nice way for us to debug smpi.
+
+But, I can get a working version with 1 processor
+```
+export PETSC_DIR=$HOME/.local/petsc
+cd $PETSC_DIR/share/petsc/examples/src/ts/tutorials
+make ex26
+smpirun -np 1 \
+	-hostfile $HOME/mpi-error/topologies/hostfile-fattree-16.txt -platform $HOME/mpi-error/topologies/fattree-16.xml \
+	--cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug \
+	./ex26
+```
+
+## Trying different Petsc examples
+```
+export PETSC_DIR=$HOME/.local/petsc
+cd $PETSC_DIR/share/petsc/examples/src/snes/tutorials
+make ex12
+smpirun -np 16 \
+	-hostfile $HOME/mpi-error/topologies/hostfile-fattree-16.txt -platform $HOME/mpi-error/topologies/fattree-16.xml \
+	--cfg=smpi/host-speed:20000000 --log=smpi_config.thres:debug \
+	./ex12
+```
+
+
+## Back to Algorithmic Sampling
 
