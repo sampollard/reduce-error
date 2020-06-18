@@ -6,3 +6,13 @@ smpitmp-*
 # Vim files
 .*.swp
 .*.swo
+# Haskell
+*.hi
+# LaTeX
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+
