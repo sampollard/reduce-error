@@ -16,25 +16,28 @@
 #define FLOAT_T double
 #endif
 
+#define TREE_ERROR 3
+
 /* For recursive fill_binary_tree function */
 typedef struct chg {
 	long inner;
 	long leaf;
 } changed_t;
 
-/* Look at C++ Concepts */
-class random_kary_tree {
+class random_reduction_tree {
 	public:
-		random_kary_tree();       // Empty constructor
-		random_kary_tree(int k, long n, FLOAT_T* A);  // Construct and randomize
-		~random_kary_tree();      // Destructor
+		random_reduction_tree();   // Empty constructor
+		random_reduction_tree(int k, long n, FLOAT_T* A);  // Construct and randomize
+		~random_reduction_tree(); // Destructor
 		FLOAT_T sum_tree();       // Add all leaves. Sum is at the root.
 		FLOAT_T multiply_tree();  // Multiply all leaves. Product is at the root.
 		changed_t fill_binary_tree(
-			long irem, tree<FLOAT_T>::iterator current, long lrem);
+				long irem, tree<FLOAT_T>::iterator current, long lrem);
 	private:
+		changed_t grow_random_binary_tree(
+				tree<FLOAT_T>::iterator root, long lrem);
 		changed_t fill_balanced_binary_tree(
-			long irem, tree<FLOAT_T>::iterator current, long lrem);
+				long irem, tree<FLOAT_T>::iterator current, long lrem);
 		tree<FLOAT_T> t;     // The tree
 		int k_;              // Fan-out of tree
 		long n_;             // Size of array of elements to insert
@@ -42,5 +45,4 @@ class random_kary_tree {
 		long irem;           // Inner nodes remaining
 		long lrem;           // Leaf nodes remaining
 };
-
 #endif

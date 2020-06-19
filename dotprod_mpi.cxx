@@ -9,7 +9,7 @@
 *      + omp_dotprod_mpi.c     - MPI only version
 *      - omp_dotprod_hybrid.c  - Hybrid MPI and OpenMP version
 * SOURCE: Blaise Barney
-* LAST REVISED: 5/18/20 - Samuel Pollard
+* LAST REVISED: 6/18/20 - Samuel Pollard
 ******************************************************************************/
 #define USAGE "mpirun -np <N> ./dotprod_mpi <veclen> <topology>"
 
@@ -45,7 +45,7 @@ int main (int argc, char* argv[])
 	int taskid, numtasks;
 	long i, j, chunk, len, rc=0;
 	double *a, *b, *as, *bs, *rank_sum;
-	double mysum, nc_sum, par_sum, can_mpi_sum; //, rassoc_sum;
+	double mysum, nc_sum, par_sum, can_mpi_sum, rassoc_sum;
 	double starttime, endtime, ptime;
 	union udouble {
 		double d;
@@ -139,7 +139,7 @@ int main (int argc, char* argv[])
 		printf("numtasks\tveclen\ttopology\treduction algorithm\treduction order\tparallel time\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
 
 		// Generate a random summation (TODO)
-		// rassoc_sum = associative_sum_rand<double>(numtasks, rank_sum, 1);
+		rassoc_sum = associative_sum_rand<double>(numtasks, rank_sum, 1);
 		// pv.d = rassoc_sum;
 		// printf("Random assocs:     dot(x,y) =\t%a\t0x%lx\n", rassoc_sum, pv.u);
 		pv.d = par_sum;
@@ -173,9 +173,9 @@ template <typename T>
 T associative_sum_rand(long n, T* A, int seed)
 {
 	srand(seed);
-	random_kary_tree t;
+	random_reduction_tree t;
 	try {
-		t = random_kary_tree(2, n, A);
+		t = random_reduction_tree(2, n, A);
 	} catch (int e) {
 		return 0.0/0.0;
 	}
