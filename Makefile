@@ -73,7 +73,7 @@ sim : $(TARGETS)
 				--cfg=smpi/host-speed:$(FLOPS) \
 				--cfg=smpi/reduce:$(algo) \
 				$(LOG_LEVEL) \
-				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo);
+				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo); \
 		) \
 		$(foreach topo,$(TOPOLOGY_72), \
 			smpirun -hostfile topologies/hostfile-$(topo).txt -platform topologies/$(topo).xml \
@@ -81,7 +81,7 @@ sim : $(TARGETS)
 				--cfg=smpi/host-speed:$(FLOPS) \
 				--cfg=smpi/reduce:$(algo) \
 				$(LOG_LEVEL) \
-				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo);
+				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo); \
 		) \
 	)
 

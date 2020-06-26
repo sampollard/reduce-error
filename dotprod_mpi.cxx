@@ -11,7 +11,8 @@
 * SOURCE: Blaise Barney
 * LAST REVISED: 6/18/20 - Samuel Pollard
 ******************************************************************************/
-#define USAGE "mpirun -np <N> ./dotprod_mpi <veclen> <topology>"
+#define USAGE ("mpirun -np <N> ./dotprod_mpi <veclen> <topology> <algorithm>\n"\
+              "\twhere topology and algorithm are just strings for logging\n")
 
 #include <cstdio>
 #include <mpi.h>
@@ -61,7 +62,7 @@ int main (int argc, char* argv[])
 	len = atol(argv[1]);
 	if (len <= 0 || len % numtasks != 0 || argc != 4) {
 		if (taskid == 0) {
-			fprintf(stderr, USAGE "\n");
+			fprintf(stderr, USAGE);
 		}
 		if (len % numtasks != 0) {
 			fprintf(stderr,
