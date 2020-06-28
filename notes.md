@@ -414,7 +414,9 @@ Execution failed with code 73.
 ```
 
 From degomme:
->  yes I would advise to try another one in the meantime, as petsc is a huge beast, and relies on quite rarely used MPI calls that are not our strength .. But it's a nice way for us to debug smpi.
+>  yes I would advise to try another one in the meantime, as petsc is a huge
+>  beast, and relies on quite rarely used MPI calls that are not our strength
+>  .. But it's a nice way for us to debug smpi.
 
 But, I can get a working version with 1 processor
 ```
@@ -440,4 +442,13 @@ smpirun -np 16 \
 
 
 ## Back to Algorithmic Sampling
-
+### 6/26
+Reading Volume 4, fascicle 4a, you would think Knuth is getting paid whatever
+the opposite of "per word" is. It took me a very long time to understand what
+was going on because of the weird GOTO algorithm syntax as well as no
+explanation for what k means. But whatever, I eventually figured it out.  Some
+examples of random trees:
+```
+n = 5: [1, 2, 7, 5, 4, 6, 0, 8, 3]
+n = 4: [1, 2, 3, 5, 4, 6, 0]
+```

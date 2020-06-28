@@ -1,9 +1,6 @@
 /* Create a binary tree for creating random associativities.  The idea here is
  * if you have a binary tree with n leaves, there are C_n different binary
- * trees. We randomly sample from these binary trees according to the following
- * process.
- *
- * 1.
+ * trees. We randomly sample from these binary trees.
  */
 
 #ifndef ASSOC_HXX
@@ -31,18 +28,16 @@ class random_reduction_tree {
 		~random_reduction_tree(); // Destructor
 		FLOAT_T sum_tree();       // Add all leaves. Sum is at the root.
 		FLOAT_T multiply_tree();  // Multiply all leaves. Product is at the root.
-		changed_t fill_binary_tree(
-				long irem, tree<FLOAT_T>::iterator current, long lrem);
 	private:
-		changed_t grow_random_binary_tree(
-				tree<FLOAT_T>::iterator root, long lrem);
+		changed_t grow_random_binary_tree(long leaves);
+		long fill_binary_tree(tree<FLOAT_T>::iterator c, long *L, long s, long idx);
 		changed_t fill_balanced_binary_tree(
-				long irem, tree<FLOAT_T>::iterator current, long lrem);
-		tree<FLOAT_T> t;     // The tree
-		int k_;              // Fan-out of tree
-		long n_;             // Size of array of elements to insert
-		FLOAT_T* A_;         // Elements to put in the leaves
-		long irem;           // Inner nodes remaining
-		long lrem;           // Leaf nodes remaining
+				long irem, tree<FLOAT_T>::iterator current, long leaves);
+		tree<FLOAT_T> t_;         // The tree
+		int k_;                   // Fan-out of tree
+		long n_;                  // Size of array of elements to insert
+		FLOAT_T* A_;              // Elements to put in the leaves
+		long irem;                // Inner nodes remaining
+		long lrem;                // Leaf nodes remaining
 };
 #endif

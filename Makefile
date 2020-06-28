@@ -21,7 +21,7 @@ VECLEN_BIG = 72000000
 #LOG_LEVEL = --log=smpi_colls.threshold:debug
 LOG_LEVEL = --log=root.thres:critical
 # 3 Gflops. See notes.md for explanation.
-FLOPS = 3000000000
+FLOPS = 3000000000f
 MPI_REDUCE_ALGOS = default ompi mpich mvapich2 impi automatic \
 	arrival_pattern_aware binomial flat_tree NTSL scatter_gather ompi_chain \
 	ompi_pipeline ompi_binary ompi_in_order_binary ompi_binomial \
@@ -60,10 +60,10 @@ OMPI_ALGOS = 0 1 2 3 4 5 6 7
 
 .PHONY : quick sim ompi clean differ
 quick : $(TARGETS)
-	smpirun -hostfile topologies/hostfile-fattree-16.txt -platform topologies/torus-2-2-4.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-2-4 auto
 	smpirun -hostfile topologies/hostfile-fattree-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-16 auto
 	smpirun -hostfile topologies/hostfile-fattree-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-72 auto
 	smpirun -hostfile topologies/hostfile-fattree-72.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-4-9 auto
+	smpirun -hostfile topologies/hostfile-fattree-16.txt -platform topologies/torus-2-2-4.xml -np 4 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-2-4 auto
 
 sim : $(TARGETS)
 	$(foreach algo,$(MPI_REDUCE_ALGOS), \
@@ -87,7 +87,7 @@ sim : $(TARGETS)
 
 # Potential bug in SimGrid
 differ : dotprod_mpi
-	smpirun -hostfile topologies/hostfile-torus-2-4-9.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:3000000000 --cfg=smpi/reduce:mvapich2_knomial --log=root.thres:critical ./dotprod_mpi 720 torus-2-4-9 mvapich2_knomial
+	smpirun -hostfile topologies/hostfile-torus-2-4-9.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:3000000000f --cfg=smpi/reduce:mvapich2_knomial --log=root.thres:critical ./dotprod_mpi 720 torus-2-4-9 mvapich2_knomial
 
 # OpenMPI command line arguments
 ompi: $(TARGETS)
