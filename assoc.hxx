@@ -32,7 +32,9 @@ class random_reduction_tree {
 		changed_t grow_random_binary_tree(long leaves);
 		long fill_binary_tree(tree<FLOAT_T>::iterator c, long *L, long s, long idx);
 		changed_t fill_balanced_binary_tree(
-				long irem, tree<FLOAT_T>::iterator current, long leaves);
+				tree<FLOAT_T>::iterator c, long *L, long s, long idx);
+		void eval_tree_sum(tree<FLOAT_T>::iterator c);
+		void eval_tree_product(tree<FLOAT_T>::iterator c);
 		tree<FLOAT_T> t_;         // The tree
 		int k_;                   // Fan-out of tree
 		long n_;                  // Size of array of elements to insert

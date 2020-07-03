@@ -17,6 +17,8 @@
  *  https://www.R-project.org/Licenses/
  *
  */
+#ifndef RAND_CXX
+#define RAND_CXX
 
 /* A version of Marsaglia-MultiCarry */
 
@@ -62,3 +64,4 @@ double subnormal_rand(void)
 	x.d = x.d & ~(3ULL << 62);
 	return x.f;
 }
+#endif

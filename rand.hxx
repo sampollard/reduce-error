@@ -1,5 +1,5 @@
-#ifndef RAND
-#define RAND
+#ifndef RAND_HXX
+#define RAND_HXX
 /* See rand.cxx for license */
 void set_seed(unsigned int i1, unsigned int i2);
 void get_seed(unsigned int *i1, unsigned int *i2);

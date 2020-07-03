@@ -35,8 +35,8 @@
  *         /  \
  *     (a+b)   \
  *      / \     \
- *    /   \      \
- *   a    b      c
+ *     /   \     \
+ *    a     b     c
  */
 template <typename T>
 T associative_sum_rand(long n, T* A, int seed);
@@ -46,7 +46,7 @@ int main (int argc, char* argv[])
 	int taskid, numtasks;
 	long i, j, chunk, len, rc=0;
 	double *a, *b, *as, *bs, *rank_sum;
-	double mysum, nc_sum, par_sum, can_mpi_sum, rassoc_sum;
+	double mysum, nc_sum, par_sum, can_mpi_sum, rand_sum;
 	double starttime, endtime, ptime;
 	union udouble {
 		double d;
@@ -58,9 +58,15 @@ int main (int argc, char* argv[])
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 	MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
-
+	if (argc != 4) {
+		if (taskid == 0) {
+			fprintf(stderr, USAGE);
+		}
+		rc = 1;
+		goto done;
+	}
 	len = atol(argv[1]);
-	if (len <= 0 || len % numtasks != 0 || argc != 4) {
+	if (len <= 0 || len % numtasks != 0) {
 		if (taskid == 0) {
 			fprintf(stderr, USAGE);
 		}
@@ -136,13 +142,13 @@ int main (int argc, char* argv[])
 		for (i = 0; i < numtasks; i++) {
 			can_mpi_sum += rank_sum[i];
 		}
-		// Header
-		printf("numtasks\tveclen\ttopology\treduction algorithm\treduction order\tparallel time\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
+		// Generate a random summation
+		rand_sum = associative_sum_rand<double>(numtasks, rank_sum, 1);
 
-		// Generate a random summation (TODO)
-		rassoc_sum = associative_sum_rand<double>(numtasks, rank_sum, 1);
-		// pv.d = rassoc_sum;
-		// printf("Random assocs:     dot(x,y) =\t%a\t0x%lx\n", rassoc_sum, pv.u);
+		// Print header then different summations
+		printf("numtasks\tveclen\ttopology\treduction algorithm\treduction order\tparallel time\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
+		pv.d = rand_sum;
+		printf("% 5d\t% 10ld\t%s\t%s\tRandom assocs:   \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, rand_sum, rand_sum, pv.u);
 		pv.d = par_sum;
 		printf("% 5d\t% 10ld\t%s\t%s\tMPI Reduce       \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, par_sum, par_sum, pv.u);
 		pv.d = nc_sum;

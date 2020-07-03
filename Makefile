@@ -1,12 +1,24 @@
 # Makefile for MPI reduction tests
-# Make sure to do spack load spack load openmpi@4.0.3
+# usage:
+# Do "make clean" before changing between USE_MPI and not using it
+# `make quick` runs some short MPI programs
+# `make sim` runs tests for different simgrid reduction algorithms
+# `make ompi` runs tests for different OpenMPI reduction algorithms
+# `make assoc` runs many random associations (must have USE_MPI = 0)
+
+USE_MPI ?= 0
+MPICXX = smpicxx
+# If using mpicxx, make sure to do spack load spack load openmpi@4.0.3
+#MPICXX = mpicxx
 
 EXTRA_SOURCES = rand.cxx mpi_op.cxx assoc.cxx
 HEADERS = rand.hxx mpi_op.hxx assoc.hxx
+ifeq ($(USE_MPI), 1)
 TARGETS = mpi_pi_reduce dotprod_mpi
+else
+TARGETS = assoc_test
+endif
 
-MPICXX = smpicxx
-#MPICXX = mpicxx
 # MPI Modular Component Architecture commands (OpenMPI)
 VERBOSITY = coll_base_verbose 0
 #VERBOSITY = coll_base_verbose 40
@@ -39,13 +51,24 @@ TARGET_OBJS = $(TARGETS:=.o)
 all : $(TARGETS)
 
 %.o : %.cxx
+ifeq ($(USE_MPI), 1)
 	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -c $^
+else
+	$(CXX) $(CXXFLAGS) -c $^
+endif
 
+
+# MPI targets
+ifeq ($(USE_MPI),1)
 mpi_pi_reduce: mpi_pi_reduce.o rand.o
 	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
-
-dotprod_mpi : $(OBJECTS) rand.o mpi_op.o dotprod_mpi.o assoc.hxx
+dotprod_mpi : $(OBJECTS) rand.o mpi_op.o dotprod_mpi.o
 	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+else 
+# Non-mpi targets
+assoc_test : assoc_test.o rand.o assoc.o
+	$(CXX) $(CXXFLAGS) -o $@ $^
+endif
 
 # OpenMPI MPI_Reduce Algorithms
 OMPI_ALGOS = 0 1 2 3 4 5 6 7
@@ -95,15 +118,18 @@ ompi: $(TARGETS)
 		echo Reduction algorithm $(algo) ; \
 		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./mpi_pi_reduce;)
 	$(foreach algo,$(OMPI_ALGOS),\
-		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./dotprod_mpi $(VECLEN_BIG) $(algo);)
+		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./dotprod_mpi $(VECLEN_BIG) native $(algo);)
+
+# Random associations (serial)
+assoc: $(TARGETS)
+	./assoc_test 10000 500
 
 clean :
-	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch)
+	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
 
 # Dependency lists
+rand.o :
+mpi_op.o : mpi_op.hxx
 mpi_pi_reduce.o : rand.hxx
 dotprod_mpi.o : rand.hxx assoc.hxx mpi_op.hxx
-rand.o : rand.hxx
-mpi_op.o : mpi_op.hxx
-rand.o : rand.hxx
-assoc.hxx: assoc.cxx
+assoc_test.o: assoc.hxx rand.hxx
