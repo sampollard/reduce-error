@@ -4,11 +4,11 @@
 # `make quick` runs some short MPI programs
 # `make sim` runs tests for different simgrid reduction algorithms
 # `make ompi` runs tests for different OpenMPI reduction algorithms
-# `make assoc` runs many random associations (must have USE_MPI = 0)
+# `USE_MPI=0 make assoc` runs many random associations (must have USE_MPI = 0)
 
-USE_MPI ?= 0
+USE_MPI ?= 1
+# Make sure to recompile before switching between simgrid and other MPI
 MPICXX = smpicxx
-# If using mpicxx, make sure to do spack load spack load openmpi@4.0.3
 #MPICXX = mpicxx
 
 EXTRA_SOURCES = rand.cxx mpi_op.cxx assoc.cxx
@@ -17,15 +17,15 @@ ifeq ($(USE_MPI), 1)
 TARGETS = mpi_pi_reduce dotprod_mpi
 else
 TARGETS = assoc_test
+LIBS += -lmpfr -lgmp
 endif
 
-# MPI Modular Component Architecture commands (OpenMPI)
+# MPI and MPI Modular Component Architecture commands (OpenMPI)
+NUM_PROCS_LOCAL = 16 # For running on the system MPI; simgrid runs use other process counts
 VERBOSITY = coll_base_verbose 0
 #VERBOSITY = coll_base_verbose 40
 
-
-# MPI Flags
-NUM_PROCS = 16
+# Sizes
 VECLEN = 14400
 VECLEN_BIG = 72000000
 
@@ -65,9 +65,9 @@ mpi_pi_reduce: mpi_pi_reduce.o rand.o
 dotprod_mpi : $(OBJECTS) rand.o mpi_op.o dotprod_mpi.o
 	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 else 
-# Non-mpi targets
+# Non-MPI targets
 assoc_test : assoc_test.o rand.o assoc.o
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 endif
 
 # OpenMPI MPI_Reduce Algorithms
@@ -81,7 +81,7 @@ OMPI_ALGOS = 0 1 2 3 4 5 6 7
 # 6:"in-order_binary"
 # 7:"rabenseifner"
 
-.PHONY : quick sim ompi clean differ
+.PHONY : quick sim ompi clean differ assoc
 quick : $(TARGETS)
 	smpirun -hostfile topologies/hostfile-fattree-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-16 auto
 	smpirun -hostfile topologies/hostfile-fattree-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-72 auto
@@ -116,13 +116,13 @@ differ : dotprod_mpi
 ompi: $(TARGETS)
 	$(foreach algo,$(OMPI_ALGOS),\
 		echo Reduction algorithm $(algo) ; \
-		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./mpi_pi_reduce;)
+		mpirun -np $(NUM_PROCS_LOCAL) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./mpi_pi_reduce;)
 	$(foreach algo,$(OMPI_ALGOS),\
-		mpirun -np $(NUM_PROCS) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./dotprod_mpi $(VECLEN_BIG) native $(algo);)
+		mpirun -np $(NUM_PROCS_LOCAL) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./dotprod_mpi $(VECLEN_BIG) native $(algo);)
 
 # Random associations (serial)
-assoc: $(TARGETS)
-	./assoc_test 10000 500
+assoc : assoc_test
+	./assoc_test 100000 500
 
 clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so

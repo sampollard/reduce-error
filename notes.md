@@ -456,3 +456,23 @@ n = 4: [1, 2, 3, 5, 4, 6, 0]
 ### 7/3
 Finally got some MPI reduction working. The trick was to look for nan's in the tree;
 if you're inside a nan, recurse down and try to fill in accumlated values.
+
+### MPFR
+Jul 8, 2020
+
+The good news with MPFR is its C interface works with C++ too.  Not too bad to
+get working, as long as I get the right includes. Here's what I need on
+artemis, e.g.
+```
+module load boost-1.72.0-gcc-7.5.0-q725eoa
+spack load mpfr@4.0.2
+USE_MPI=0 make assoc
+```
+Output changed a little. To get things to align, do `tabs -20` or something in the terminal.
+
+### Next Steps
+- Template the assoc class. This is because I want float, double, MPFR, as well as maybe some
+  kind of nonconforming IEEE formats.
+- Add in product, not just sum reduction.
+- 
+

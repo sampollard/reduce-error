@@ -147,16 +147,16 @@ int main (int argc, char* argv[])
 
 		// Print header then different summations
 		printf("numtasks\tveclen\ttopology\treduction algorithm\treduction order\tparallel time\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
-		pv.d = rand_sum;
-		printf("% 5d\t% 10ld\t%s\t%s\tRandom assocs:   \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, rand_sum, rand_sum, pv.u);
-		pv.d = par_sum;
-		printf("% 5d\t% 10ld\t%s\t%s\tMPI Reduce       \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, par_sum, par_sum, pv.u);
-		pv.d = nc_sum;
-		printf("% 5d\t% 10ld\t%s\t%s\tMPI NC sum       \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, nc_sum, nc_sum, pv.u);
-		pv.d = can_mpi_sum;
-		printf("% 5d\t% 10ld\t%s\t%s\tCanonical MPI    \t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, can_mpi_sum, can_mpi_sum, pv.u);
 		pv.d = mysum;
-		printf("% 5d\t% 10ld\t%s\t%s\tSerial left assoc\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, mysum, mysum, pv.u);
+		printf("% 5d\t% 10ld\t%s\t%s\tLeft assoc\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, mysum, mysum, pv.u);
+		pv.d = rand_sum;
+		printf("% 5d\t% 10ld\t%s\t%s\tRandom assoc\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, rand_sum, rand_sum, pv.u);
+		pv.d = par_sum;
+		printf("% 5d\t% 10ld\t%s\t%s\tMPI Reduce\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, par_sum, par_sum, pv.u);
+		pv.d = nc_sum;
+		printf("% 5d\t% 10ld\t%s\t%s\tMPI noncomm sum\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, nc_sum, nc_sum, pv.u);
+		pv.d = can_mpi_sum;
+		printf("% 5d\t% 10ld\t%s\t%s\tCanonical MPI\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, argv[2], argv[3], ptime, can_mpi_sum, can_mpi_sum, pv.u);
 	}
 
 	free(a);
