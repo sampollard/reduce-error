@@ -1,17 +1,25 @@
-/* Implementation of random_reduction_tree */
+/* Implementation of random_reduction_tree.
+ * To add a new instance, add explicitly at the bottom of this file
+ */
 #ifndef ASSOC_CXX
 #define ASSOC_CXX
 
 #include "assoc.hxx"
+
+#include <boost/multiprecision/mpfr.hpp>
+
 using namespace std;
 
-random_reduction_tree::random_reduction_tree() { };
-random_reduction_tree::~random_reduction_tree() { };
+template <class FLOAT_T, class ALLOC>
+random_reduction_tree<FLOAT_T, ALLOC>::random_reduction_tree() { };
+template <class FLOAT_T, class ALLOC>
+random_reduction_tree<FLOAT_T, ALLOC>::~random_reduction_tree() { };
 
-random_reduction_tree::random_reduction_tree(int k, long n, FLOAT_T* A)
+template <class FLOAT_T, class ALLOC>
+random_reduction_tree<FLOAT_T, ALLOC>::random_reduction_tree(int k, long n, FLOAT_T* A)
 	: k_(k), n_(n), A_(A)
 {
-	typename tree<FLOAT_T>::iterator top, root;
+	typename tree<FLOAT_T, ALLOC>::iterator top, root;
 	top = t_.begin();
 	root = t_.insert(top, nan(""));
 	changed_t v;
@@ -30,21 +38,24 @@ random_reduction_tree::random_reduction_tree(int k, long n, FLOAT_T* A)
 	}
 }
 
-FLOAT_T random_reduction_tree::sum_tree()
+template <class FLOAT_T, class ALLOC>
+FLOAT_T random_reduction_tree<FLOAT_T, ALLOC>::sum_tree()
 {
 	eval_tree_sum(t_.begin());
 	return *t_.begin();
 }
 
-FLOAT_T random_reduction_tree::multiply_tree()
+template <class FLOAT_T, class ALLOC>
+FLOAT_T random_reduction_tree<FLOAT_T, ALLOC>::multiply_tree()
 {
 	eval_tree_product(t_.begin());
 	return *t_.begin();
 }
 
 /* Make a balanced binary tree. Not random */
-changed_t random_reduction_tree::fill_balanced_binary_tree(
-		tree<FLOAT_T>::iterator c, long *L, long s, long idx)
+template <class FLOAT_T, class ALLOC>
+changed_t random_reduction_tree<FLOAT_T, ALLOC>::fill_balanced_binary_tree(
+		typename tree<FLOAT_T, ALLOC>::iterator c, long *L, long s, long idx)
 {
 	fprintf(stderr, "fill_balanced_binary_tree unimplemented\n");
 	return (changed_t) {.inner = 0, .leaf = 0};
@@ -56,10 +67,11 @@ changed_t random_reduction_tree::fill_balanced_binary_tree(
  * idx is the index into the random double array
  * Returns: the number of leaf nodes filled
  */
-long random_reduction_tree::fill_binary_tree(
-		tree<FLOAT_T>::iterator c, long *L, long s, long idx)
+template <class FLOAT_T, class ALLOC>
+long random_reduction_tree<FLOAT_T, ALLOC>::fill_binary_tree(
+		typename tree<FLOAT_T, ALLOC>::iterator c, long *L, long s, long idx)
 {
-	tree<FLOAT_T>::iterator l, r;
+	typename tree<FLOAT_T>::iterator l, r;
 	long la; // leaves added from a subtree
 	if (s % 2 == 0) { // even means leaf node
 		*c = A_[idx];
@@ -78,9 +90,10 @@ long random_reduction_tree::fill_binary_tree(
 /* Add up the elements of a tree, first by filling in the internal nodes */
 /* Example post-order traversal for n = 4:
  * -6.3452 ; -13.9186 ; 15.3983 ; nan ; 22.1456 ; nan ; nan */
-void random_reduction_tree::eval_tree_sum(tree<FLOAT_T>::iterator c)
+template <class FLOAT_T, class ALLOC>
+void random_reduction_tree<FLOAT_T, ALLOC>::eval_tree_sum(typename tree<FLOAT_T, ALLOC>::iterator c)
 {
-	tree<FLOAT_T>::sibling_iterator s;
+	typename tree<FLOAT_T, ALLOC>::sibling_iterator s;
 	FLOAT_T acc = 0.;
 	if (isnan(*c)) { // If not NaN then eval is done
 		s = t_.begin(c);
@@ -109,9 +122,10 @@ void random_reduction_tree::eval_tree_sum(tree<FLOAT_T>::iterator c)
 	}
 */
 
-void random_reduction_tree::eval_tree_product(tree<FLOAT_T>::iterator c)
+template <class FLOAT_T, class ALLOC>
+void random_reduction_tree<FLOAT_T, ALLOC>::eval_tree_product(typename tree<FLOAT_T, ALLOC>::iterator c)
 {
-	tree<FLOAT_T>::sibling_iterator s;
+	typename tree<FLOAT_T, ALLOC>::sibling_iterator s;
 	FLOAT_T acc = 1.;
 	if (isnan(*c)) { // If not NaN then eval is done
 		s = t_.begin(c);
@@ -136,7 +150,8 @@ void random_reduction_tree::eval_tree_product(tree<FLOAT_T>::iterator c)
  * leaves: Number of leaves in tree.
  * returns: The number of inner nodes and leaf nodes added in the subtree
  */
-changed_t random_reduction_tree::grow_random_binary_tree(long leaves)
+template <class FLOAT_T, class ALLOC>
+changed_t random_reduction_tree<FLOAT_T, ALLOC>::grow_random_binary_tree(long leaves)
 {
 	long N = leaves - 1;
 	if ((2 * N + 1) >= RAND_MAX) {
@@ -171,15 +186,23 @@ changed_t random_reduction_tree::grow_random_binary_tree(long leaves)
 	/* Now, to convert to C++ tree. Leaf nodes have even numbers, internal
 	 * nodes have odd numbers. */
 	/* Root already initialized in constructor */
-	tree<FLOAT_T>::iterator c = t_.begin();
+	typename tree<FLOAT_T, ALLOC>::iterator c = t_.begin();
 	rem = fill_binary_tree(c, L, L[0], 0);
 	free(L);
 	return (changed_t) {.inner = N, .leaf = rem};
 }
 
-/* Explicit template instantiation. Here, we see two flavors, respectively:
- * classes and class member functions */
-/* template class random_reduction_tree<double>; */
+/* Explicit template instantiation. */
+template class random_reduction_tree<double>;
+template class random_reduction_tree<float>;
+template class random_reduction_tree<boost::multiprecision::mpfr_float_50>;
+template class random_reduction_tree<boost::multiprecision::mpfr_float_100>;
+template class random_reduction_tree<boost::multiprecision::mpfr_float_500>;
+template class random_reduction_tree<boost::multiprecision::mpfr_float_1000>;
+template class random_reduction_tree<boost::multiprecision::mpfr_float>;
+/* For completeness, here's what an explicit template instantiation for
+ * class member functions looks like, though we don't need that here */
 /* template random_reduction_tree<double>::random_reduction_tree(int k, long n, double* A); */
+
 #endif
 

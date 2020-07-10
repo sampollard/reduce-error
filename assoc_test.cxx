@@ -1,9 +1,12 @@
 /* Sum up some random arrays, print their result */
-#ifndef ASSOC_TEST_CXX
-#define ASSOC_TEST_CXX
+#ifndef ASSOC_EST_CXX
+#define ASSOC_EST_CXX
 
+#include <algorithm>
 #include <cstdio>
 #include <iostream>
+#include <numeric>
+#include <type_traits>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <boost/multiprecision/mpfr.hpp>
@@ -15,27 +18,38 @@
                "<n> is the number of leaves in the reduction tree\n"\
                "<iters> are the number of iterations to run\n")
 
-#define RAND_01a() (unif_rand_R())
-//#define RAND_01a() (subnormal_rand())
+//#define RAND_01a() (unif_rand_R())
+#define RAND_01a() (subnormal_rand())
 #define SEED 42
+#define FLOAT_T double
+
+/* Note: it would be more robust to use ACCUMULATOR().operator()(a,b) instead
+ * of a ACC_OP b, but this doesn't work for mpfr values */
+/* #define ACCUMULATOR std::multiplies<FLOAT_T> */
+/* #define ACC_OP * */
+#define ACCUMULATOR std::plus<FLOAT_T>
+#define ACC_OP +
+
+const bool is_sum  = std::is_same<std::plus<FLOAT_T>, ACCUMULATOR>::value;
+const bool is_prod = std::is_same<std::multiplies<FLOAT_T>, ACCUMULATOR>::value;
 
 using namespace boost::multiprecision;
 
 template <typename T>
-T associative_sum_rand(long long n, T* A);
+T associative_accumulate_rand(long long n, T* A);
 
 int main (int argc, char* argv[])
 {
 	/* Initialize stuff */
 	int rc = 0;
 	long long len, i, iters;
-	double acc, rand_acc;
-	/* Chapp et al. use MPFR with 4096 bits which is 1234 digits */
+	FLOAT_T tmp, def_acc, rand_acc, shuf_acc;
+	const FLOAT_T acc_init = is_sum ? 0. : (is_prod ? 1. : 0./0.);
+	/* Chapp et al. use MPFR with 4096 bits which is 1233 digits */
 	mpfr_float_1000 mpfr_acc;
-	double *a;
-	union udouble {
+	union udouble { // for type punning (to get bits of double)
 		double d;
-		unsigned long u;
+		unsigned long long u;
 	} pv;
 	if (argc != 3) {
 		rc = 1;
@@ -44,66 +58,94 @@ int main (int argc, char* argv[])
 	}
 	len = atoll(argv[1]);
 	iters = atoll(argv[2]);
-	if (len <= 0) {
+	if (len <= 0 || iters <= 0) {
 		rc = 1;
 		fprintf(stderr, USAGE);
 		return rc;
 	}
-	acc = 0.;
-	rand_acc = 0.;
+	if (is_sum) {
+		def_acc = rand_acc = shuf_acc = 0.;
+		mpfr_acc = 0.;
+	} else if (is_prod) {
+		def_acc = rand_acc = shuf_acc = 1.;
+		mpfr_acc = 1.;
+	}
 	/* Store the random arrays */
-	a = (double*) malloc(len*sizeof(double));
+	std::vector<FLOAT_T> def_a;
+	std::vector<FLOAT_T> a_shuf;
 	std::vector<mpfr_float_1000> a_mpfr;
+	def_a.reserve(len);
 	a_mpfr.reserve(len);
+	a_shuf.reserve(len);
 
 	/* Generate some random numbers */
 	set_seed(SEED, 0);
+	srand(SEED);
 	for (i = 0; i < len; i++) {
-		a[i] = RAND_01a();
-		acc += a[i];
-		a_mpfr.push_back(a[i]);
-		mpfr_acc += a_mpfr[i];
+		tmp = RAND_01a();
+
+		a_mpfr.push_back(tmp);
+		mpfr_acc = mpfr_acc ACC_OP a_mpfr[i];
+
+		def_a.push_back(tmp);
+		def_acc = def_acc ACC_OP tmp;
+
+		a_shuf.push_back(tmp);
 	}
 
 	/* Print header then different summations */
 	printf("veclen\torder\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
 	/* MPFR */
-	/* Raw hex too difficult to figure out internal data of MPFR so we use this
-	 * as the place to print out the full precision of the MPFR */
+	/* Raw hex too difficult to figure out internal data of MPFR so we use FP
+	 * (hex) as the place to print out the full precision of the MPFR */
 	mpfr_printf("%lld\tMPFR(%d) left assoc\t%.15RNf\t%.15RNa\t%RNa\n", len,
 			std::numeric_limits<mpfr_float_1000>::digits, // Precision of MPFR
 			mpfr_acc, mpfr_acc, mpfr_acc);
+
 	/* Left associative (the straightforward way to sum) */
-	pv.d = acc;
-	printf("%lld\tLeft assoc\t%.15f\t%a\t0x%lx\n", len, acc, acc, pv.u);
-	/* Generate random association via a binary tree */
-	srand(SEED);
+	pv.d = def_acc;
+	printf("%lld\tLeft assoc\t%.15f\t%a\t0x%llx\n", len, def_acc, def_acc, pv.u);
+
+	/* Generate a random association via a binary tree */
 	for (i = 0; i < iters; i++) {
-		rand_acc = associative_sum_rand<double>(len, a);
+		rand_acc = associative_accumulate_rand<FLOAT_T>(len, &def_a[0]);
 		pv.d = rand_acc;
-		printf("%lld\tRandom assoc\t%.15f\t%a\t0x%lx\n", len, rand_acc, rand_acc, pv.u);
+		printf("%lld\tRandom assoc\t%.15f\t%a\t0x%llx\n", len, rand_acc, rand_acc, pv.u);
 	}
 
-	/* Clean up */
-	free(a);
-	// done: // gotos don't play well with C++ automatic variables
+	/* Sum a random shuffle, left-associative. */
+	for (i = 0; i < iters; i++) {
+		std::random_shuffle(a_shuf.begin(), a_shuf.end());
+		shuf_acc = std::accumulate(a_shuf.begin(), a_shuf.end(), acc_init, ACCUMULATOR());
+		pv.d = shuf_acc;
+		printf("%lld\tShuffle l-assoc\t%.15f\t%a\t0x%llx\n", len, shuf_acc, shuf_acc, pv.u);
+	}
+
 	return rc;
 }
 
-/* Sum the array, using random associations. That is, this will do things like
- * (a+b)+c or a+(b+c). There are C_n different ways to associate the sum of an
- * array, where C_n is the nth Catalan number. This function has the side-effect
+/* Sum the array, using random associations. hat is, this will do things like
+ * (a+b)+c or a+(b+c). here are C_n different ways to associate the sum of an
+ * array, where C_n is the nth Catalan number. his function has the side-effect
  * of setting the seed and calling rand() many times.
  */
 template <typename T>
-T associative_sum_rand(long long n, T* A)
+T associative_accumulate_rand(long long n, T* A)
 {
-	random_reduction_tree t;
+	random_reduction_tree<T> t;
+	T c;
 	try {
-		t = random_reduction_tree(2, (long) n, A);
+		t = random_reduction_tree<T>(2, (long) n, A);
 	} catch (int e) {
 		return 0.0/0.0;
 	}
-	return t.sum_tree();
+	if (is_prod) {
+		c = t.multiply_tree();
+	} else if (is_sum) {
+		c = t.sum_tree();
+	} else {
+		c = 0.0/0.0;
+	}
+	return c;
 }
 #endif

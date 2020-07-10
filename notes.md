@@ -471,8 +471,16 @@ USE_MPI=0 make assoc
 Output changed a little. To get things to align, do `tabs -20` or something in the terminal.
 
 ### Next Steps
-- Template the assoc class. This is because I want float, double, MPFR, as well as maybe some
-  kind of nonconforming IEEE formats.
+- Template the assoc class. This is because I want float, double, MPFR, as well
+  as maybe some kind of nonconforming IEEE formats. Update: wasn't too bad to
+  template! Just gotta sprinkle in typenames everywhere and be more careful with
+  what the typechecker can guess (it can't guess allocators)
 - Add in product, not just sum reduction.
-- 
+- Data analysis
 
+### MPFR nastiness
+They print differently. See [my stack overflow question](https://stackoverflow.com/questions/62828959/why-is-mpfr-printf-different-than-printf-for-hex-float-a-conversion-specifier)
+
+I got some _really_ weird results when I did accumulate with * and I
+initialized the result to 0. Should be 0* .... = 0, but it wasn't in all cases.
+Also seems to happen when i intialize the accumulator to 1.0 too!

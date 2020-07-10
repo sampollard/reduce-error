@@ -1,10 +1,6 @@
 # Makefile for MPI reduction tests
 # usage:
-# Do "make clean" before changing between USE_MPI and not using it
-# `make quick` runs some short MPI programs
-# `make sim` runs tests for different simgrid reduction algorithms
-# `make ompi` runs tests for different OpenMPI reduction algorithms
-# `USE_MPI=0 make assoc` runs many random associations (must have USE_MPI = 0)
+# see README.md
 
 USE_MPI ?= 1
 # Make sure to recompile before switching between simgrid and other MPI
@@ -17,7 +13,6 @@ ifeq ($(USE_MPI), 1)
 TARGETS = mpi_pi_reduce dotprod_mpi
 else
 TARGETS = assoc_test
-LIBS += -lmpfr -lgmp
 endif
 
 # MPI and MPI Modular Component Architecture commands (OpenMPI)
@@ -28,6 +23,8 @@ VERBOSITY = coll_base_verbose 0
 # Sizes
 VECLEN = 14400
 VECLEN_BIG = 72000000
+VECLEN_RAND = 100000
+ITERS_RAND = 100
 
 # SimGrid options
 #LOG_LEVEL = --log=smpi_colls.threshold:debug
@@ -41,8 +38,9 @@ MPI_REDUCE_ALGOS = default ompi mpich mvapich2 impi automatic \
 TOPOLOGY_16 = fattree-16 torus-2-2-4
 TOPOLOGY_72 = fattree-72 torus-2-4-9
 LDFLAGS += -L$${HOME}/.local/simgrid/lib -Wl,-rpath=$${HOME}/.local/simgrid/lib
+LIBS += -lmpfr -lgmp
 
-CXXFLAGS += -Wall -g
+CXXFLAGS += -Wall -g -std=c++17
 
 # Shouldn't need to change
 OBJECTS = $(EXTRA_SOURCES:.cxx=.o)
@@ -61,9 +59,9 @@ endif
 # MPI targets
 ifeq ($(USE_MPI),1)
 mpi_pi_reduce: mpi_pi_reduce.o rand.o
-	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 dotprod_mpi : $(OBJECTS) rand.o mpi_op.o dotprod_mpi.o
-	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 else 
 # Non-MPI targets
 assoc_test : assoc_test.o rand.o assoc.o
@@ -122,7 +120,7 @@ ompi: $(TARGETS)
 
 # Random associations (serial)
 assoc : assoc_test
-	./assoc_test 100000 500
+	./assoc_test $(VECLEN_RAND) $(ITERS_RAND)
 
 clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
