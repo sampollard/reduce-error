@@ -40,11 +40,12 @@ TOPOLOGY_72 = fattree-72 torus-2-4-9
 LDFLAGS += -L$${HOME}/.local/simgrid/lib -Wl,-rpath=$${HOME}/.local/simgrid/lib
 LIBS += -lmpfr -lgmp
 
-CXXFLAGS += -Wall -g -std=c++17
+CXXFLAGS += -Wall -g
 
 # Shouldn't need to change
 OBJECTS = $(EXTRA_SOURCES:.cxx=.o)
 TARGET_OBJS = $(TARGETS:=.o)
+TOPO_DIR = ../topologies
 
 all : $(TARGETS)
 
@@ -81,15 +82,15 @@ OMPI_ALGOS = 0 1 2 3 4 5 6 7
 
 .PHONY : quick sim ompi clean differ assoc
 quick : $(TARGETS)
-	smpirun -hostfile topologies/hostfile-fattree-16.txt -platform topologies/fattree-16.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-16 auto
-	smpirun -hostfile topologies/hostfile-fattree-72.txt -platform topologies/fattree-72.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-72 auto
-	smpirun -hostfile topologies/hostfile-fattree-72.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-4-9 auto
-	smpirun -hostfile topologies/hostfile-fattree-16.txt -platform topologies/torus-2-2-4.xml -np 4 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-2-4 auto
+	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-16.txt -platform $(TOPO_DIR)/fattree-16.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-16 auto
+	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-72.txt -platform $(TOPO_DIR)/fattree-72.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-72 auto
+	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-72.txt -platform $(TOPO_DIR)/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-4-9 auto
+	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-16.txt -platform $(TOPO_DIR)/torus-2-2-4.xml -np 4 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-2-4 auto
 
 sim : $(TARGETS)
 	$(foreach algo,$(MPI_REDUCE_ALGOS), \
 		$(foreach topo,$(TOPOLOGY_16), \
-			smpirun -hostfile topologies/hostfile-$(topo).txt -platform topologies/$(topo).xml \
+			smpirun -hostfile $(TOPO_DIR)/hostfile-$(topo).txt -platform $(TOPO_DIR)/$(topo).xml \
 				-np 16 \
 				--cfg=smpi/host-speed:$(FLOPS) \
 				--cfg=smpi/reduce:$(algo) \
@@ -97,7 +98,7 @@ sim : $(TARGETS)
 				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo); \
 		) \
 		$(foreach topo,$(TOPOLOGY_72), \
-			smpirun -hostfile topologies/hostfile-$(topo).txt -platform topologies/$(topo).xml \
+			smpirun -hostfile $(TOPO_DIR)/hostfile-$(topo).txt -platform $(TOPO_DIR)/$(topo).xml \
 				-np 72 \
 				--cfg=smpi/host-speed:$(FLOPS) \
 				--cfg=smpi/reduce:$(algo) \
@@ -108,7 +109,7 @@ sim : $(TARGETS)
 
 # Potential bug in SimGrid
 differ : dotprod_mpi
-	smpirun -hostfile topologies/hostfile-torus-2-4-9.txt -platform topologies/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:3000000000f --cfg=smpi/reduce:mvapich2_knomial --log=root.thres:critical ./dotprod_mpi 720 torus-2-4-9 mvapich2_knomial
+	smpirun -hostfile $(TOPO_DIR)/hostfile-torus-2-4-9.txt -platform $(TOPO_DIR)/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:3000000000f --cfg=smpi/reduce:mvapich2_knomial --log=root.thres:critical ./dotprod_mpi 720 torus-2-4-9 mvapich2_knomial
 
 # OpenMPI command line arguments
 ompi: $(TARGETS)
@@ -130,4 +131,4 @@ rand.o :
 mpi_op.o : mpi_op.hxx
 mpi_pi_reduce.o : rand.hxx
 dotprod_mpi.o : rand.hxx assoc.hxx mpi_op.hxx
-assoc_test.o: assoc.hxx rand.hxx
+assoc_test.o : assoc.hxx rand.hxx
