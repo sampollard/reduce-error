@@ -52,5 +52,11 @@ paste0(v, collapse = "")
 # Let’s call R_n = the number of ways to do this. Your first (warmup) question is: what is R_n?
 # Next, suppose the concatenation operator is associative but not commutative. Now what is V_n, where V_n is the potential number of values you can get, given that ab = ba but (a(bc)) != (ab)c? It can be manually checked pretty easily that V_1 = 1, V_2 = 1, V_3 = 3.
 
-df <- read.table(file = 'file.tsv', sep = '\t', header = TRUE)
+t1 <- c("abcd","bacd","abdc","badc","dcab","dcba","cdab","cdba") # Symmetric
+t2 <- c("abcd","bacd","cabd","cbad","dabc","dbac","dcba","dbac") # Mirror t3
+t3 <- c("abcd","abdc","cdba","dcba","acdb","adcb","bcda","bdca") # Mirror t2
+t4 <- c("abcd","acbd","adbc","adcb","bcda","cbda","dbca","dcba") # Mirror t5
+t5 <- c("abcd","acbd","dabc","dacb","dbca","dcba","bcad","cbad") # Mirror t4
+u <- unique(sort(c(t1,t2,t3,t4,t5))) # = 22
+cat(paste(u, collapse = "\n"))
 
