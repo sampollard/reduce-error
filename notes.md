@@ -484,3 +484,10 @@ They print differently. See [my stack overflow question](https://stackoverflow.c
 I got some _really_ weird results when I did accumulate with * and I
 initialized the result to 0. Should be 0* .... = 0, but it wasn't in all cases.
 Also seems to happen when i intialize the accumulator to 1.0 too!
+
+### 7/21 - First plots
+Use uniform [0,1) generator. 
+```
+USE_MPI=0 make assoc > assoc.tsv
+```
+

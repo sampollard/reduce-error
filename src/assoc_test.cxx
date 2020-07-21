@@ -18,8 +18,8 @@
                "<n> is the number of leaves in the reduction tree\n"\
                "<iters> are the number of iterations to run\n")
 
-//#define RAND_01a() (unif_rand_R())
-#define RAND_01a() (subnormal_rand())
+#define RAND_01a() (unif_rand_R())
+//#define RAND_01a() (subnormal_rand())
 #define SEED 42
 #define FLOAT_T double
 
