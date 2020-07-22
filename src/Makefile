@@ -24,7 +24,6 @@ VERBOSITY = coll_base_verbose 0
 VECLEN = 14400
 VECLEN_BIG = 72000000
 VECLEN_RAND = 100000
-ITERS_RAND = 100
 
 # SimGrid options
 #LOG_LEVEL = --log=smpi_colls.threshold:debug
@@ -120,8 +119,11 @@ ompi: $(TARGETS)
 		mpirun -np $(NUM_PROCS_LOCAL) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./dotprod_mpi $(VECLEN_BIG) native $(algo);)
 
 # Random associations (serial)
+assoc_quick : assoc_test
+	./assoc_test $(VECLEN_RAND) 20
+
 assoc : assoc_test
-	./assoc_test $(VECLEN_RAND) $(ITERS_RAND)
+	@./assoc_test $(VECLEN_RAND) 50000
 
 clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so

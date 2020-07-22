@@ -36,7 +36,7 @@ const bool is_prod = std::is_same<std::multiplies<FLOAT_T>, ACCUMULATOR>::value;
 using namespace boost::multiprecision;
 
 template <typename T>
-T associative_accumulate_rand(long long n, T* A);
+T associative_accumulate_rand(long long n, T* A, bool is_sum);
 
 int main (int argc, char* argv[])
 {
@@ -52,16 +52,15 @@ int main (int argc, char* argv[])
 		unsigned long long u;
 	} pv;
 	if (argc != 3) {
-		rc = 1;
 		fprintf(stderr, USAGE);
-		return rc;
+		return 1;
 	}
 	len = atoll(argv[1]);
 	iters = atoll(argv[2]);
 	if (len <= 0 || iters <= 0) {
 		rc = 1;
 		fprintf(stderr, USAGE);
-		return rc;
+		return 1;
 	}
 	if (is_sum) {
 		def_acc = rand_acc = shuf_acc = 0.;
@@ -69,6 +68,9 @@ int main (int argc, char* argv[])
 	} else if (is_prod) {
 		def_acc = rand_acc = shuf_acc = 1.;
 		mpfr_acc = 1.;
+	} else {
+		fprintf(stderr, "Must be sum or product");
+		return 1;
 	}
 	/* Store the random arrays */
 	std::vector<FLOAT_T> def_a;
@@ -106,21 +108,23 @@ int main (int argc, char* argv[])
 	pv.d = def_acc;
 	printf("%lld\tLeft assoc\t%.15f\t%a\t0x%llx\n", len, def_acc, def_acc, pv.u);
 
-	/* Generate a random association via a binary tree */
 	for (i = 0; i < iters; i++) {
-		rand_acc = associative_accumulate_rand<FLOAT_T>(len, &def_a[0]);
+		/* Random association, don't shuffle */
+		rand_acc = associative_accumulate_rand<FLOAT_T>(len, &def_a[0], is_sum);
 		pv.d = rand_acc;
 		printf("%lld\tRandom assoc\t%.15f\t%a\t0x%llx\n", len, rand_acc, rand_acc, pv.u);
-	}
 
-	/* Sum a random shuffle, left-associative. */
-	for (i = 0; i < iters; i++) {
+		/* Sum a random shuffle, accumulate left-associative. */
 		std::random_shuffle(a_shuf.begin(), a_shuf.end());
 		shuf_acc = std::accumulate(a_shuf.begin(), a_shuf.end(), acc_init, ACCUMULATOR());
 		pv.d = shuf_acc;
-		printf("%lld\tShuffle l-assoc\t%.15f\t%a\t0x%llx\n", len, shuf_acc, shuf_acc, pv.u);
-	}
+		printf("%lld\tShuffle l assoc\t%.15f\t%a\t0x%llx\n", len, shuf_acc, shuf_acc, pv.u);
 
+		/* MPI-sum: random shuffle _and_ random association */
+		rand_acc = associative_accumulate_rand<FLOAT_T>(len, &def_a[0], is_sum);
+		pv.d = rand_acc;
+		printf("%lld\tShuffle rand assoc\t%.15f\t%a\t0x%llx\n", len, shuf_acc, shuf_acc, pv.u);
+	}
 	return rc;
 }
 
@@ -130,7 +134,7 @@ int main (int argc, char* argv[])
  * of setting the seed and calling rand() many times.
  */
 template <typename T>
-T associative_accumulate_rand(long long n, T* A)
+T associative_accumulate_rand(long long n, T* A, bool is_sum)
 {
 	random_reduction_tree<T> t;
 	T c;
@@ -139,12 +143,10 @@ T associative_accumulate_rand(long long n, T* A)
 	} catch (int e) {
 		return 0.0/0.0;
 	}
-	if (is_prod) {
-		c = t.multiply_tree();
-	} else if (is_sum) {
+	if (is_sum) {
 		c = t.sum_tree();
 	} else {
-		c = 0.0/0.0;
+		c = t.multiply_tree();
 	}
 	return c;
 }
