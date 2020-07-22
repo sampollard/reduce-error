@@ -43,7 +43,7 @@ int main (int argc, char* argv[])
 	/* Initialize stuff */
 	int rc = 0;
 	long long len, i, iters;
-	FLOAT_T tmp, def_acc, rand_acc, shuf_acc;
+	FLOAT_T tmp, def_acc, rand_acc, shuf_acc, sra_acc;
 	const FLOAT_T acc_init = is_sum ? 0. : (is_prod ? 1. : 0./0.);
 	/* Chapp et al. use MPFR with 4096 bits which is 1233 digits */
 	mpfr_float_1000 mpfr_acc;
@@ -121,9 +121,9 @@ int main (int argc, char* argv[])
 		printf("%lld\tShuffle l assoc\t%.15f\t%a\t0x%llx\n", len, shuf_acc, shuf_acc, pv.u);
 
 		/* MPI-sum: random shuffle _and_ random association */
-		rand_acc = associative_accumulate_rand<FLOAT_T>(len, &def_a[0], is_sum);
-		pv.d = rand_acc;
-		printf("%lld\tShuffle rand assoc\t%.15f\t%a\t0x%llx\n", len, shuf_acc, shuf_acc, pv.u);
+		sra_acc = associative_accumulate_rand<FLOAT_T>(len, &def_a[0], is_sum);
+		pv.d = sra_acc;
+		printf("%lld\tShuffle rand assoc\t%.15f\t%a\t0x%llx\n", len, sra_acc, sra_acc, pv.u);
 	}
 	return rc;
 }
