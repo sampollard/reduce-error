@@ -482,12 +482,58 @@ Output changed a little. To get things to align, do `tabs -20` or something in t
 They print differently. See [my stack overflow question](https://stackoverflow.com/questions/62828959/why-is-mpfr-printf-different-than-printf-for-hex-float-a-conversion-specifier)
 
 I got some _really_ weird results when I did accumulate with * and I
-initialized the result to 0. Should be 0* .... = 0, but it wasn't in all cases.
+initialized the result to 0. Should be 0 x .... = 0, but it wasn't in all cases.
 Also seems to happen when i intialize the accumulator to 1.0 too!
 
 ### 7/21 - First plots
 Use uniform [0,1) generator. 
 ```
-USE_MPI=0 make assoc > assoc.tsv
+spack load mpfr@4.0.2
+USE_MPI=0 make -s assoc > assoc.tsv
 ```
 
+GGplot is pretty good at figuring out plot boundaries but sometimes you need things like
+` ymin = min(error)*1.2, ymax = max(error)*1.2)` in aes
+
+### Some R melt stuff
+At first I measured two differences, but that just gets confusing. Better to show the bars.
+```
+df_la$error_mpfr <- mpfr_1000 - df_la$fp_decimal
+df_la$error_la <- canonical - df_la$fp_decimal
+df_er <- melt(df_la[c("order","error_mpfr","error_la")], variable.name = "error_type")
+ # Then later I had
+  geom_point(aes(color = factor(error_type)))
+```
+
+### Sum stuff
+
+Also I added in the "evil" mpi-style sum which shuffles and randomly associates
+Get it with
+`scp artemis.cs.uoregon.edu:/home/users/spollard/mpi-error/src/assoc.tsv experiments/assoc-runif.tsv`
+Then
+`Rscript assoc.R`
+
+Look into `library(egg)` [for alignment with legends](https://stackoverflow.com/questions/16255579/how-can-i-make-consistent-width-plots-in-ggplot-with-legends)
+
+Apparently ggsave
+[(it's an R problem as of 2015)](https://github.com/tidyverse/ggplot2/issues/268)
+doesn't update timestamps? Delete then rewrite... that's dumb :(
+
+### Next steps
+
+1. Do runiform[-1,1]
+2. Do the nearly-subnormal generation
+3. Cite that interesting not-quite paper on generating FP numbers (Generating
+  Pseudo-random Floating-Point Values, Allen B. Downey)  maybe even implement
+  it.  Weird, this one's from
+  [Computational Science](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7302591/)
+4. Kahan Summation
+5. Different topologies
+6. Cite https://oeis.org/A001147
+
+### Combinatorics
+Number of ways to reduce a commutative, nonassociative operator:
+Not quite [this](https://en.wikipedia.org/wiki/Wedderburn%E2%80%93Etherington_number)
+Not quote [this](https://oeis.org/A083563)
+
+[It's this one!](https://oeis.org/A001147) - double factorial for odd numbers.
