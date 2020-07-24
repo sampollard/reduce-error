@@ -64,4 +64,14 @@ double subnormal_rand(void)
 	x.d = x.d & ~(3ULL << 62);
 	return x.f;
 }
+
+double unif_rand_R1()
+{
+	return 2 * (unif_rand_R() - 0.5);
+}
+
+double unif_rand_R1000()
+{
+	return 2000 * (unif_rand_R() - 0.5);
+}
 #endif

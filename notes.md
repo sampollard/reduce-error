@@ -489,7 +489,7 @@ Also seems to happen when i intialize the accumulator to 1.0 too!
 Use uniform [0,1) generator.
 ```
 spack load mpfr@4.0.2
-USE_MPI=0 make -s assoc > assoc.tsv
+USE_MPI=0 make -s assoc
 ```
 
 GGplot is pretty good at figuring out plot boundaries but sometimes you need things like

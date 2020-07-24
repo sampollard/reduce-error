@@ -120,10 +120,16 @@ ompi: $(TARGETS)
 
 # Random associations (serial)
 assoc_quick : assoc_test
-	./assoc_test $(VECLEN_RAND) 20
+	./assoc_test $(VECLEN_RAND) 10 runif[0,1]
+	./assoc_test $(VECLEN_RAND) 10 runif[-1,1]
+	./assoc_test $(VECLEN_RAND) 10 runif[-1000,1000]
+	./assoc_test $(VECLEN_RAND) 10 rsubn
 
 assoc : assoc_test
-	@./assoc_test $(VECLEN_RAND) 50000
+	./assoc_test $(VECLEN_RAND) 50000 runif[0,1]        > assoc-runif01.tsv
+	./assoc_test $(VECLEN_RAND) 50000 runif[-1,1]       > assoc-runif11.tsv
+	./assoc_test $(VECLEN_RAND) 50000 runif[-1000,1000] > assoc-runif1000.tsv
+	./assoc_test $(VECLEN_RAND) 50000 rsubn             > assoc-rsubn.tsv
 
 clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
