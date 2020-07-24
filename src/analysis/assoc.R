@@ -1,8 +1,9 @@
 # Associativity experiments for uniform distribution
 library(ggplot2)
 library(reshape2)
-DBL_MIN = 2.22507385850720138309e-308 # Machine Epsilon
-FLT_MIN = 1.17549435e-38
+DBL_MIN <- 2.22507385850720138309e-308 # Machine Epsilon
+FLT_MIN <- 1.17549435e-38
+height <- 3
 
 df <- read.table(file = 'experiments/assoc-runif01.tsv', sep = '\t', header = TRUE)
 stopifnot(all(df$veclen == df$veclen[1]))
@@ -28,7 +29,7 @@ ra  <- allr[allr$order == "Random assoc",]
 sla <- allr[allr$order == "Shuffle l assoc",]
 sra <- allr[allr$order == "Shuffle rand assoc",]
 
-# Make some plots
+# Make some scatterplots. Not particularly useful.
 for (x in c("ra", "sla", "sra", "allr")) {
 	cdf <- get(x)
 	cdf <- na.omit(cdf)
@@ -38,12 +39,12 @@ for (x in c("ra", "sla", "sra", "allr")) {
 		geom_point(aes(color = factor(order))) +
 		geom_hline(yintercept = 0.0, color = "black") +
 		geom_hline(yintercept = mpfr_1000 - canonical, color = "red", show.legend = TRUE)
-	ggsave(paste0("figures/assoc-runif01-",x,".pdf"), plot = p, height = 4)
+	ggsave(paste0("figures/assoc-runif01-",x,".pdf"), plot = p, height = height)
 }
 rm(cdf)
 
 # Histograms
-#            "orange"  "purple", "cyan"     "magenta"     # From https://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=4
+#            "orange"  "purple"  "cyan"     "magenta"     # From https://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=4
 palette <- c("#d95f02","#7570b3","#1b9e77", "#e7298a")
 
 binc <- sapply(list(ra,sla,sra), function(x) {length(unique(sort(x$error_mpfr)))})
@@ -52,23 +53,74 @@ binc <- min(ifelse(binc%%2 == 0, binc + 1, binc)) # Odd looks better for symmetr
 cat(sprintf("means\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
 	mean(ra$error_mpfr), mean(sla$error_mpfr), mean(sra$error_mpfr)))
 
-# All 3
+# Just Shuffling random-associative
 p <- ggplot(allr, aes(x = error_mpfr)) +
-	geom_histogram(data = ra,  bins = binc, aes(fill = order), alpha = 0.5) +
+	geom_histogram(data = sra, bins = binc, fill = palette[2], alpha = 0.7) +
+	geom_vline(aes(xintercept = 0.0, color = "Zero"), # No error
+			linetype = "solid", alpha = 1.0, show.legend = TRUE) +
+	geom_vline( # Shuffle random assoc
+		aes(xintercept = mean(sra$error_mpfr), color = "Mean"),
+		linetype = "solid", alpha = 1.0, show.legend = TRUE) +
+	scale_color_manual(name = NULL, values = c(Mean = palette[2], Zero = "black")) +
+	theme(legend.position = c(0.8, 0.9), legend.direction="horizontal") +
+	labs(title = "Shuffling and Random Associativity",
+		caption = paste0("n = ", format(nrow(sra),big.mark=","), "\n|A| = ", format(veclen, big.mark=","))) +
+	ylab("Count") +
+	xlab(expression(sum[mpfr] - sum[double]))
+ggsave(paste0("figures/assoc-runif01-hist-sra.pdf"), plot = p, height = height)
+
+
+# Changing vertical gap between legend entries. What a doozy.
+# https://stackoverflow.com/questions/11366964/is-there-a-way-to-change-the-spacing-between-legend-items-in-ggplot2
+# @clauswilke
+draw_key_polygon3 <- function(data, params, size) {
+  lwd <- min(data$size, min(size) / 4)
+  grid::rectGrob(
+    width = grid::unit(0.6, "npc"),
+    height = grid::unit(0.6, "npc"),
+    gp = grid::gpar(
+      col = data$colour,
+      fill = alpha(data$fill, data$alpha),
+      lty = data$linetype,
+      lwd = lwd * .pt,
+      linejoin = "mitre"
+    ))
+}
+# register new key drawing function, 
+# the effect is global & persistent throughout the R session
+#TODO: Need Geom<something> cause I don't have a bar graph
+GeomBar$draw_key = draw_key_polygon3
+
+# Shuffle Random Associations vs. Shuffle, left-associative
+p <- ggplot(allr, aes(x = error_mpfr)) +
 	geom_histogram(data = sla, bins = binc, aes(fill = order), alpha = 0.5) +
 	geom_histogram(data = sra, bins = binc, aes(fill = order), alpha = 0.5) +
+	geom_vline(aes(xintercept = 0.0, color = "Zero", linetype = "Zero"),
+			alpha = 1.0, show.legend = TRUE) +
+	geom_vline(aes(xintercept = mpfr_1000 - canonical, color = "Canonical", linetype = "Canonical"),
+			alpha = 0.7, show.legend = TRUE) +
+	geom_vline(aes(xintercept = mean(sla$error_mpfr), color = "ShuffleLAssoc", linetype = "ShuffleLAssoc"),
+			alpha = 1.0, show.legend = TRUE) +
+	geom_vline(aes(xintercept = mean(sra$error_mpfr), color = "ShuffleRandAssoc", linetype = "ShuffleRandAssoc"),
+			alpha = 1.0, show.legend = TRUE) +
 	scale_fill_manual(name = "order", values = palette[1:3]) + # use labels = to make custom legend
-	geom_vline(aes(xintercept = 0.0), # No error
-			color = "black", linetype = "solid", alpha=1.0) +
-	geom_vline(aes(xintercept = mpfr_1000 - canonical), # Canonical left-associative
-			color = "red", linetype = "dotted", alpha=0.8) +
-	geom_vline(aes(xintercept = mean(ra$error_mpfr)), # Random assoc
-			color = palette[1], linetype = "solid", alpha=0.7) +
-	geom_vline(aes(xintercept = mean(sla$error_mpfr)), # Shuffle l assoc
-			color = palette[2], linetype = "solid", alpha=0.7) +
-	geom_vline(aes(xintercept = mean(sra$error_mpfr)), # Shuffle random assoc
-			color = palette[3], linetype = "solid", alpha=0.7)
-ggsave(paste0("figures/assoc-runif01-hist-blended.pdf"), plot = p, height = 4)
+	scale_linetype_manual(name = "Lines", values = c(
+			Zero = "solid",
+			Canonical = "dotted",
+			ShuffleLAssoc = "dotdash",
+			ShuffleRandAssoc = "dashed")) +
+	scale_color_manual(name = "Lines", values = c(
+			Zero = "black",
+			Canonical = "red",
+			ShuffleLAssoc = palette[1],
+			ShuffleRandAssoc = palette[2])) +
+	theme(legend.position = c(0.8, 0.8), legend.direction = "vertical", legend.key.size = unit(1.1, 'lines')) +
+	labs(title = "Shuffling With and Without Random Associativity",
+		caption = paste0("n = ", format(nrow(sla),big.mark=","), "\n|A| = ", format(veclen, big.mark=","))) +
+	ylab("Count") +
+	xlab(expression(sum[mpfr] - sum[double]))
+ggsave(paste0("figures/assoc-runif01-hist-sra-sla.pdf"), plot = p, height = height)
+
 # FIXME
 	# geom_segment(aes(
 	# 	x = max(abs(error_mpfr))/2,
