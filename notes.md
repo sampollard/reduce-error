@@ -1,7 +1,7 @@
 # Some notes on HPC
 ## Random number generation
 Consider `random` from the C `stdlib`. It returns a `long int` which is 32
-bits. If you have a long int, then divide by 
+bits. If you have a long int, then divide by
 ```
 	c = 2 << (31 - 1);
 ```
@@ -35,7 +35,7 @@ double unif_rand(void)
 }
 ```
 
-Look at uniform random numbers with test coverage versus 
+Look at uniform random numbers with test coverage versus
 
 ## A different way to generate random numbers in [0,1)
 We have two cases:
@@ -188,7 +188,7 @@ I was finally able to get it to get different results.
 ### 5/8
 Implementing the random binary trees is a little more difficult than I thought.
 I forgot a few important issues, namely:
-1. You can't just allocate an array for the binary tree since it's not balanced 
+1. You can't just allocate an array for the binary tree since it's not balanced
 2. There are a few more details to worry about for implementation.
 
 However, I was able to add a custom MPI Operation, and that still resulted in
@@ -235,7 +235,7 @@ make -j 4
 
 Got the non-mpi version to run. From the paper,
 
-> using a fixed time step of ∆t ≈ 2.8e-4, 
+> using a fixed time step of ∆t ≈ 2.8e-4,
 
 but we don't know how long the simulation runs for :facepalm:
 10,000 timesteps for 3 seconds is on the same order of magnitude.
@@ -321,7 +321,7 @@ Can a NaN become a non-nan?
  	--with-mpi-include=$HOME/.local/simgrid/include/:$HOME/.local/simgrid/include/smpi \
  	--with-cflags='SMPI_NO_OVERRIDE_MALLOC=1' \
  	--with-fortran-bindings=0 \
- 	--with-cc=smpicc --with-cxx=smpicxx --with-fc=gfortran 
+ 	--with-cc=smpicc --with-cxx=smpicxx --with-fc=gfortran
  ```
 after a chat on the `#simgrid` debian IRC. Then I built with
 
@@ -486,7 +486,7 @@ initialized the result to 0. Should be 0 x .... = 0, but it wasn't in all cases.
 Also seems to happen when i intialize the accumulator to 1.0 too!
 
 ### 7/21 - First plots
-Use uniform [0,1) generator. 
+Use uniform [0,1) generator.
 ```
 spack load mpfr@4.0.2
 USE_MPI=0 make -s assoc > assoc.tsv
@@ -522,14 +522,15 @@ doesn't update timestamps? Delete then rewrite... that's dumb :(
 ### Next steps
 
 1. Do runiform[-1,1]
-2. Do the nearly-subnormal generation
+2. ✓ Do the nearly-subnormal generation
 3. Cite that interesting not-quite paper on generating FP numbers (Generating
   Pseudo-random Floating-Point Values, Allen B. Downey)  maybe even implement
   it.  Weird, this one's from
   [Computational Science](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7302591/)
 4. Kahan Summation
 5. Different topologies
-6. Cite https://oeis.org/A001147
+6. ✓ Cite https://oeis.org/A001147
+7. Multiple histograms
 
 ### Combinatorics
 Number of ways to reduce a commutative, nonassociative operator:
@@ -537,3 +538,50 @@ Not quite [this](https://en.wikipedia.org/wiki/Wedderburn%E2%80%93Etherington_nu
 Not quote [this](https://oeis.org/A083563)
 
 [It's this one!](https://oeis.org/A001147) - double factorial for odd numbers.
+n  n!!               n!/2           Cn
+0  1                 0              1
+1  1                 0              1
+2  3                 1              2
+3  15                3              5
+4  105               12             14
+5  945               60             42
+6  10395             360            132
+7  135135            2520           429
+8  2027025           20160          1430
+9  34459425          181440         4862
+10 654729075         1814400        16796
+11 13749310575       239500800      58786
+12 316234143225      3113510400     208012
+
+
+## Plotting or: Lots of time spent
+A cool trick to get `DBL_MIN` for a system `gcc -dM -E - < /dev/null | less`
+
+Want to figure out what the potential max error is, given range of values and # summed.
+
+### Some Colorscheme stuff
+Problem is it seems to only be light blues...
+```
+palette <- scale_color_brewer("Dark2")$palette(5)
+d <- data.frame(x1=c(1,3,1,5,4), x2=c(2,4,3,6,6), y1=c(1,1,4,1,3), y2=c(2,2,5,3,5), t=palette, r=c(1,2,3,4,5))
+ggplot() + 
+	scale_x_continuous(name="x") + 
+	scale_y_continuous(name="y") +
+	geom_rect(data=d, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=t), color="black", alpha=0.7) +
+	geom_text(data=d, aes(x=x1+(x2-x1)/2, y=y1+(y2-y1)/2, label=r), size=4)
+```
+
+I like the idea of this code but it causes more pain than its worth
+```
+pidx <- 1
+for (x in c("ra", "sla", "sra")) {
+	cdf <- get(x)
+	pd <- ggplot_build(p) # Gets all the computed data from ggplot
+	p_count <- pd$data[[pidx]]$count
+	print(mean(cdf$error_mpfr))
+	geom_vline(
+		aes(xintercept = mean(cdf$error_mpfr)),
+			color = palette[pidx], linetype = "solid", alpha=0.7)
+	pidx <- pidx + 1
+}
+```
