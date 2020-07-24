@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <iostream>
 #include <numeric>
+#include <string>
 #include <type_traits>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -14,12 +15,12 @@
 #include "rand.hxx"
 #include "assoc.hxx"
 
-#define USAGE ("assoc_test <n> <iters> where\n"\
+#define USAGE ("assoc_test <n> <iters> <distr> where\n"\
                "<n> is the number of leaves in the reduction tree\n"\
-               "<iters> are the number of iterations to run\n")
+               "<iters> are the number of iterations to run\n"\
+               "<distr> is the distribution to use. Choices are:\n"\
+               "\trunif[0,1] runif[-1,1] runif[-1000,1000] rsubn\n")
 
-#define RAND_01a() (unif_rand_R())
-//#define RAND_01a() (subnormal_rand())
 #define SEED 42
 #define FLOAT_T double
 
@@ -43,15 +44,16 @@ int main (int argc, char* argv[])
 	/* Initialize stuff */
 	int rc = 0;
 	long long len, i, iters;
-	FLOAT_T tmp, def_acc, rand_acc, shuf_acc, sra_acc;
+	FLOAT_T rng, def_acc, rand_acc, shuf_acc, sra_acc;
 	const FLOAT_T acc_init = is_sum ? 0. : (is_prod ? 1. : 0./0.);
+	FLOAT_T (*rand_flt)(); // Function to generate a random float
 	/* Chapp et al. use MPFR with 4096 bits which is 1233 digits */
 	mpfr_float_1000 mpfr_acc;
 	union udouble { // for type punning (to get bits of double)
 		double d;
 		unsigned long long u;
 	} pv;
-	if (argc != 3) {
+	if (argc != 4) {
 		fprintf(stderr, USAGE);
 		return 1;
 	}
@@ -69,9 +71,24 @@ int main (int argc, char* argv[])
 		def_acc = rand_acc = shuf_acc = 1.;
 		mpfr_acc = 1.;
 	} else {
-		fprintf(stderr, "Must be sum or product");
+		fprintf(stderr, "Must be sum or product:\n%s", USAGE);
 		return 1;
 	}
+	/* Select distribution for random floating point numbers */
+	std::string dist = argv[3];
+	if (dist == "runif[0,1]") {
+		rand_flt = &unif_rand_R;
+	} else if (dist == "runif[-1,1]") {
+		rand_flt = &unif_rand_R1;
+	} else if (dist == "runif[-1000,1000]") {
+		rand_flt = &unif_rand_R1000;
+	} else if (dist == "rsubn") {
+		rand_flt = &subnormal_rand;
+	} else {
+		fprintf(stderr, "Unrecognized distribution:\n%s",USAGE);
+		return 1;
+	}
+	
 	/* Store the random arrays */
 	std::vector<FLOAT_T> def_a;
 	std::vector<FLOAT_T> a_shuf;
@@ -84,46 +101,46 @@ int main (int argc, char* argv[])
 	set_seed(SEED, 0);
 	srand(SEED);
 	for (i = 0; i < len; i++) {
-		tmp = RAND_01a();
+		rng = rand_flt();
 
-		a_mpfr.push_back(tmp);
+		a_mpfr.push_back(rng);
 		mpfr_acc = mpfr_acc ACC_OP a_mpfr[i];
 
-		def_a.push_back(tmp);
-		def_acc = def_acc ACC_OP tmp;
+		def_a.push_back(rng);
+		def_acc = def_acc ACC_OP rng;
 
-		a_shuf.push_back(tmp);
+		a_shuf.push_back(rng);
 	}
 
 	/* Print header then different summations */
-	printf("veclen\torder\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
+	printf("veclen\torder\tdistribution\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
 	/* MPFR */
 	/* Raw hex too difficult to figure out internal data of MPFR so we use FP
 	 * (hex) as the place to print out the full precision of the MPFR */
-	mpfr_printf("%lld\tMPFR(%d) left assoc\t%.15RNf\t%.15RNa\t%RNa\n", len,
+	mpfr_printf("%lld\tMPFR(%d) left assoc\t%s\t%.15RNf\t%.15RNa\t%RNa\n", len,
 			std::numeric_limits<mpfr_float_1000>::digits, // Precision of MPFR
-			mpfr_acc, mpfr_acc, mpfr_acc);
+			dist.c_str(), mpfr_acc, mpfr_acc, mpfr_acc);
 
 	/* Left associative (the straightforward way to sum) */
 	pv.d = def_acc;
-	printf("%lld\tLeft assoc\t%.15f\t%a\t0x%llx\n", len, def_acc, def_acc, pv.u);
+	printf("%lld\tLeft assoc\t%s\t%.15f\t%a\t0x%llx\n", len, dist.c_str(), def_acc, def_acc, pv.u);
 
 	for (i = 0; i < iters; i++) {
 		/* Random association, don't shuffle */
 		rand_acc = associative_accumulate_rand<FLOAT_T>(len, &def_a[0], is_sum);
 		pv.d = rand_acc;
-		printf("%lld\tRandom assoc\t%.15f\t%a\t0x%llx\n", len, rand_acc, rand_acc, pv.u);
+		printf("%lld\tRandom assoc\t%s\t%.15f\t%a\t0x%llx\n", len, dist.c_str(), rand_acc, rand_acc, pv.u);
 
 		/* Sum a random shuffle, accumulate left-associative. */
 		std::random_shuffle(a_shuf.begin(), a_shuf.end());
 		shuf_acc = std::accumulate(a_shuf.begin(), a_shuf.end(), acc_init, ACCUMULATOR());
 		pv.d = shuf_acc;
-		printf("%lld\tShuffle l assoc\t%.15f\t%a\t0x%llx\n", len, shuf_acc, shuf_acc, pv.u);
+		printf("%lld\tShuffle l assoc\t%s\t%.15f\t%a\t0x%llx\n", len, dist.c_str(), shuf_acc, shuf_acc, pv.u);
 
 		/* MPI-sum: random shuffle _and_ random association */
 		sra_acc = associative_accumulate_rand<FLOAT_T>(len, &def_a[0], is_sum);
 		pv.d = sra_acc;
-		printf("%lld\tShuffle rand assoc\t%.15f\t%a\t0x%llx\n", len, sra_acc, sra_acc, pv.u);
+		printf("%lld\tShuffle rand assoc\t%s\t%.15f\t%a\t0x%llx\n", len, dist.c_str(), sra_acc, sra_acc, pv.u);
 	}
 	return rc;
 }
