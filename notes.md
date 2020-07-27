@@ -522,15 +522,23 @@ doesn't update timestamps? Delete then rewrite... that's dumb :(
 ### Next steps
 
 1. Do runiform[-1,1]
-2. ✓ Do the nearly-subnormal generation
-3. Cite that interesting not-quite paper on generating FP numbers (Generating
+2. (low priority) Kahan Summation
+3. ✓ Do the nearly-subnormal generation
+4. Cite that interesting not-quite paper on generating FP numbers (Generating
   Pseudo-random Floating-Point Values, Allen B. Downey)  maybe even implement
   it.  Weird, this one's from
   [Computational Science](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7302591/)
-4. Kahan Summation
 5. Different topologies
 6. ✓ Cite https://oeis.org/A001147
 7. Multiple histograms
+
+#### 7/24
+Getting lots of plots. Do this
+```
+spack load mpfr@4.0.2
+USE_MPI=0 make -j assoc
+```
+Should take about 2 hours???
 
 ### Combinatorics
 Number of ways to reduce a commutative, nonassociative operator:
@@ -585,3 +593,14 @@ for (x in c("ra", "sla", "sra")) {
 	pidx <- pidx + 1
 }
 ```
+
+Another weird thing for plotting is: if you want things in the legend, you have
+to shove some stuff into the `aes` so it gets picked up by the guide. Building
+it on your own is not the play, you need to match the strings together from the
+`geom_hist` or `geom_vline` and if tweaking is required, you do that in
+`scale_color_manual`
+
+Plot looks bad if I add `guides(linetype = guide_legend(override.aes = list(size = 1)))`
+If I wanted to change orientation of key legend, that's not easy :(
+https://stackoverflow.com/questions/42954248/how-to-change-the-orientation-of-the-key-of-a-legend-in-ggplot
+
