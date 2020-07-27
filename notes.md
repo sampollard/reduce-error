@@ -519,19 +519,6 @@ Apparently ggsave
 [(it's an R problem as of 2015)](https://github.com/tidyverse/ggplot2/issues/268)
 doesn't update timestamps? Delete then rewrite... that's dumb :(
 
-### Next steps
-
-1. Do runiform[-1,1]
-2. (low priority) Kahan Summation
-3. ✓ Do the nearly-subnormal generation
-4. Cite that interesting not-quite paper on generating FP numbers (Generating
-  Pseudo-random Floating-Point Values, Allen B. Downey)  maybe even implement
-  it.  Weird, this one's from
-  [Computational Science](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7302591/)
-5. Different topologies
-6. ✓ Cite https://oeis.org/A001147
-7. Multiple histograms
-
 #### 7/24
 Getting lots of plots. Do this
 ```
@@ -594,6 +581,8 @@ for (x in c("ra", "sla", "sra")) {
 }
 ```
 
+### Plotting ideas
+
 Another weird thing for plotting is: if you want things in the legend, you have
 to shove some stuff into the `aes` so it gets picked up by the guide. Building
 it on your own is not the play, you need to match the strings together from the
@@ -602,5 +591,70 @@ it on your own is not the play, you need to match the strings together from the
 
 Plot looks bad if I add `guides(linetype = guide_legend(override.aes = list(size = 1)))`
 If I wanted to change orientation of key legend, that's not easy :(
-https://stackoverflow.com/questions/42954248/how-to-change-the-orientation-of-the-key-of-a-legend-in-ggplot
+[nastiness](https://stackoverflow.com/questions/42954248/how-to-change-the-orientation-of-the-key-of-a-legend-in-ggplot)
+
+7/26 -
+Here I think is a [better solution](https://stackoverflow.com/questions/34186081/vline-legends-not-showing-on-geom-histogram-type-plot)
+
+A realization I had (finally). When you put things in `aes`, it gives you a
+_mapping_ from data to what it means, aesthetically. This is not the same as
+describing the aesthetics itself, and this is a big part of the modularity of
+ggplot. For example, I was putting
+```
+geom_vline(data = vlines, show.legend = TRUE,
+        aes(xintercept = Value, color = Color, linetype = Linetype))
+```
+because, well, I put the colors right there! But instead, it's saying the color is determined
+by the _data_ in that part of the data frame. In my case, it was really the
+names (or values, there's 1-1 in my case) that I want to split the color by. So
+instead it should be
+```
+geom_vline(data = vlines, show.legend = TRUE,
+        aes(xintercept = Value, color = Statistic, linetype = Linetype))
+```
+where `Statistic` is something like `c("mean", "median",)`, or whatever. Similarly, if you
+don't put the specification inside of `aes` things won't get "picked up"
+outside, like if I were to put "linetype" outside of `geom_vline`, it will say
+"ok linetype is just here, has nothing to do with the declaration of what the
+data means."
+
+Do I want this? `legend.key.size = unit(1.1, 'lines'))`
+
+This didn't work:
+```
+# Changing vertical gap between legend entries. What a doozy.
+# https://stackoverflow.com/questions/11366964/is-there-a-way-to-change-the-spacing-between-legend-items-in-ggplot2
+# @clauswilke
+draw_key_polygon3 <- function(data, params, size) {
+  lwd <- min(data$size, min(size) / 4)
+  grid::rectGrob(
+    width = grid::unit(0.6, "npc"),
+    height = grid::unit(0.6, "npc"),
+    gp = grid::gpar(
+      col = data$colour,
+      fill = alpha(data$fill, data$alpha),
+      lty = data$linetype,
+      lwd = lwd * .pt,
+      linejoin = "mitre"
+    ))
+}
+# register new key drawing function, 
+# the effect is global & persistent throughout the R session
+#TODO: Need Geom<something> cause I don't have a bar graph
+GeomBar$draw_key = draw_key_polygon3
+```
+
+### Next steps
+
+1. ✓ Do runiform[-1,1]
+2. (low priority) Kahan Summation
+3. ✓ Do the nearly-subnormal generation
+4. Cite that interesting not-quite paper on generating FP numbers (Generating
+  Pseudo-random Floating-Point Values, Allen B. Downey)  maybe even implement
+  it.  Weird, this one's from
+  [Computational Science](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7302591/)
+5. Different topologies
+6. ✓ Cite https://oeis.org/A001147
+7. Multiple histograms
+8. Add the "nearly identical" plot so it looks uniform
 

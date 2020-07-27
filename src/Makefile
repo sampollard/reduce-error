@@ -65,6 +65,7 @@ dotprod_mpi : $(OBJECTS) rand.o mpi_op.o dotprod_mpi.o
 else 
 # Non-MPI targets
 assoc_test : assoc_test.o rand.o assoc.o
+	mkdir -p experiments
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 endif
 
