@@ -138,7 +138,7 @@ int main (int argc, char* argv[])
 		printf("%lld\tShuffle l assoc\t%s\t%.15f\t%a\t0x%llx\n", len, dist.c_str(), shuf_acc, shuf_acc, pv.u);
 
 		/* MPI-sum: random shuffle _and_ random association */
-		sra_acc = associative_accumulate_rand<FLOAT_T>(len, &def_a[0], is_sum);
+		sra_acc = associative_accumulate_rand<FLOAT_T>(len, &a_shuf[0], is_sum);
 		pv.d = sra_acc;
 		printf("%lld\tShuffle rand assoc\t%s\t%.15f\t%a\t0x%llx\n", len, dist.c_str(), sra_acc, sra_acc, pv.u);
 	}
