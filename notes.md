@@ -644,6 +644,10 @@ draw_key_polygon3 <- function(data, params, size) {
 GeomBar$draw_key = draw_key_polygon3
 ```
 
+Tough: making a string, then going to an expression,
+you _have_ to do `Labels <- expr_vec(vlines$Statistic)`,
+or else ggplot will not pick up that the rvalues are the same.
+
 ### Next steps
 
 1. ✓ Do runiform[-1,1]
