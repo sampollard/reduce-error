@@ -533,21 +533,22 @@ Not quite [this](https://en.wikipedia.org/wiki/Wedderburn%E2%80%93Etherington_nu
 Not quote [this](https://oeis.org/A083563)
 
 [It's this one!](https://oeis.org/A001147) - double factorial for odd numbers.
-n  n!!               n!/2           Cn
-0  1                 0              1
-1  1                 0              1
-2  3                 1              2
-3  15                3              5
-4  105               12             14
-5  945               60             42
-6  10395             360            132
-7  135135            2520           429
-8  2027025           20160          1430
-9  34459425          181440         4862
-10 654729075         1814400        16796
-11 13749310575       239500800      58786
-12 316234143225      3113510400     208012
 
+n  n!!            rho(n)           n!/2         C(n-1)
+0  1               1              1             1
+1  1               1              1             1
+2  3               1              1             1
+3  15              3              3             2
+4  105             15             12            5
+5  945             105            60            14
+6  10395           945            360           42
+7  135135          10395          2520          132
+8  2027025         135135         20160         429
+9  34459425        2027025        181440        1430
+10 654729075       34459425       1814400       4862
+11 13749310575     654729075      239500800     16796
+12 316234143225    13749310575    3113510400    58786
+13 7905853580625   316234143225   43589145600   208012
 
 ## Plotting or: Lots of time spent
 A cool trick to get `DBL_MIN` for a system `gcc -dM -E - < /dev/null | less`
@@ -652,6 +653,7 @@ or else ggplot will not pick up that the rvalues are the same.
 
 1. ✓ Do runiform[-1,1]
 2. (low priority) Kahan Summation
+3. (low priority) Repro BLAS (at least cite)
 3. ✓ Do the nearly-subnormal generation
 4. Cite that interesting not-quite paper on generating FP numbers (Generating
   Pseudo-random Floating-Point Values, Allen B. Downey)  maybe even implement
@@ -660,5 +662,8 @@ or else ggplot will not pick up that the rvalues are the same.
 5. Different topologies
 6. ✓ Cite https://oeis.org/A001147
 7. Multiple histograms
-8. Add the "nearly identical" plot so it looks uniform
+8. ✓ Make the "nearly identical" plot so it looks uniform
+9. Investigate the following: Is there a fundamental tradeoff between the
+  height of the reduction tree and the error? e.g. left-associative is the
+  most "unbalanced" in a sense - we also find the error is pretty high.
 

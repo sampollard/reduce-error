@@ -13,7 +13,9 @@ distr <- 'runif01'
 # #               "orange"  "purple"  "cyan"    "magenta" "green"   "gold"    "brown"
 # my_palette <- c("#f78631","#605c96","#178564","#e7298a","#66a61e","#e6ab02","#a6761d")
 # my_palette <- scale_color_viridis(4, discrete = T, begin=0, end=0.8)$palette(4)
-my_palette <- c("#a1dab4","#41b6c4","#2c7fb8","#253494") # YlGnBu
+# my_palette <- c("#a1dab4","#41b6c4","#2c7fb8","#253494") # YlGnBu without Yl
+# my_palette <- c("#ffffcc", "#a1dab4", "#41b6c4", "#225ea8") # YlGnBu with Yl
+my_palette <- c("#d7191c", "#abdda4", "#fdae61", "#2b83ba") # Spectral
 
 # Be careful with this: list(df1,df2) will give different results
 # than list(rbind(df1,df2)) because it will find the minimum of _each_ result.
@@ -102,33 +104,36 @@ ggsave(paste0("figures/assoc-",distr,"-hist-sra.pdf"), plot = p, height = height
 # Shuffle Random Associations vs. Shuffle, left-associative
 # Second data frame for vertical lines
 vlines <- data.frame(
-	"Statistic" = c("Zero", "Canon", "Mean L Assoc", "Mean Rand Assoc"),
+	"Statistic" = c("Zero", "Canon", "bar('ROLA')", "bar('RORA')"),
 	"Value"     = c(0.0, mpfr_1000 - canonical, mean(sla$error_mpfr), mean(sra$error_mpfr)),
 	"Color"     = c("black", "#0042ff", my_palette[1], my_palette[2]),
 	"Linetype"  = c("solid", "dotdash", "dashed", "dotted"),
 	stringsAsFactors = FALSE)
 hist_style <- data.frame(
-	"Statistic" = c("L Assoc", "Rand Assoc"),
+	"Statistic" = c("ROLA", "RORA"),
 	"Fill"      = c(my_palette[1], my_palette[2]))
+Labels <- expr_vec(vlines$Statistic)
 # So the orderings are just as as I wrote them above
 vlines$Statistic <- factor(
 	vlines$Statistic, levels = vlines$Statistic, ordered = TRUE)
 hist_style$Statistic <- factor(
 	hist_style$Statistic, levels = hist_style$Statistic, ordered = TRUE)
-binc <- count_bins(list(sra,sla))
+binc <- count_bins(list(sla,sra))
 # binc <- count_bins(list(rbind(sra,sla))) # This gives some interesting peaks for sra
 p <- ggplot(rbind(sla,sra), aes(x = error_mpfr, fill = order)) +
-	geom_histogram(bins = 101, position = "identity", alpha = 0.7) +
+	geom_histogram(bins = 101, position = "identity", alpha = 0.6, color = "black") +
 	geom_vline(data = vlines, show.legend = TRUE,
 		aes(xintercept = Value, color = Statistic, linetype = Statistic)) +
-	scale_linetype_manual(name = "Lines", values = vlines$Linetype) +
-	scale_color_manual(name = "Lines", values = vlines$Color) +
+	scale_linetype_manual(name = "Lines", values = vlines$Linetype,
+		labels = Labels) +
+	scale_color_manual(name = "Lines", values = vlines$Color,
+		labels = Labels) +
 	# The legends for the histograms
 	scale_fill_manual(name = "Histograms", guide = "legend",
 		values = hist_style$Fill,
 		labels = hist_style$Statistic) +
 	guides(fill = guide_legend(override.aes = list(linetype = 0))) +
-	labs(title = "Shuffling With and Without Random Associativity",
+	labs(title = "Random Ordering With and Without Random Associativity",
 		caption = paste0("n = ", format(nrow(sla),big.mark=","), "\n|A| = ", format(veclen, big.mark=","))) +
 	theme(legend.title = element_blank(),
 		legend.position = "top",
@@ -147,7 +152,7 @@ ggsave(paste0("figures/assoc-",distr,"-hist-sra-sla.pdf"), plot = p, height = 5)
 
 # The two that look very similar
 vlines <- data.frame(
-	"Statistic" = c("Zero", "bar('R. Assoc')", "bar('S. R. Assoc')", "'max(Error)'"),
+	"Statistic" = c("Zero", "bar('FORA')", "bar('RORA')", "'max(Error)'"),
 	"Value"     = c(0.0, mean(ra$error_mpfr), mean(sra$error_mpfr), max(max(ra$error_mpfr),max(sra$error_mpfr))),
 	"Color"     = c("black", my_palette[1], my_palette[3], "#0042ff"),
 	"Linetype"  = c("solid", "dotdash", "dashed", "dotted"),
@@ -161,7 +166,7 @@ p <- ggplot(rbind(ra,sra), aes(x = abs(error_mpfr))) +
 	geom_histogram(bins = binc, aes(fill = order),
 		position = "identity", color = "black", alpha = 0.6) +
 	scale_fill_manual(name = "order", values = my_palette[c(1,3)],
-		labels = c("R. Assoc", "S. R. Assoc")) +
+		labels = c("FORA", "RORA")) +
 	guides(fill = guide_legend(override.aes = list(linetype = 0))) +
 	# Vlines info and legend
 	geom_vline(data = vlines, show.legend = TRUE,
@@ -175,7 +180,7 @@ p <- ggplot(rbind(ra,sra), aes(x = abs(error_mpfr))) +
 		legend.position = "top",
 		legend.direction = "horizontal",
 		legend.box = "horizontal") +
-	labs(title = "Random Associativity With and Without Shuffling",
+	labs(title = "Random Associativity With and Without Random Ordering",
 		caption = paste0("n = ", format(nrow(sla),big.mark=","), "\n|A| = ", format(veclen, big.mark=","))) +
 	ylab("Count") +
 	xlab(expression(paste("Error as |",sum[mpfr] - sum[double],"|")))
