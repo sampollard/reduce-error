@@ -678,6 +678,20 @@ then run `autoreconf -i`, then run
 (that's where I unzipped the gmp tarball), then
 `install.packages(Rmpfr)`. Whew.
 
+## More Distributions
+Probably what I'll do is look at a buch, then compare, e.g.,
+absolute error (might be tough to scale accordingly) and then
+relative error across (0,1) then (-1000,1000).
+
+Gotta be careful with relative error since floating point might
+mess it up at the deltas.
+
+### 7/31
+Maybe this `vlines` and `hist_style` thing is not so good. It's fine
+for consistency across plots but it makes things really difficult
+to add, say, a third histogram. Oh my, did I code this up poorly. This
+should all be in one dataframe and `melt`ed.
+
 ## Next steps
 
 1. ✓ Do runiform[-1,1]

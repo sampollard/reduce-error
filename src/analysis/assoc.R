@@ -9,20 +9,30 @@ library(Rmpfr)
 DBL_MIN <- 2.22507385850720138309e-308 # Machine Epsilon
 FLT_MIN <- 1.17549435e-38
 height <- 3
+# Color Mappings:
 # A modified https://colorbrewer2.org/#type=qualitative&scheme=Dark2
 # #               "orange"  "purple"  "cyan"    "magenta" "green"   "gold"    "brown"
 # my_palette <- c("#f78631","#605c96","#178564","#e7298a","#66a61e","#e6ab02","#a6761d")
-# my_palette <- scale_color_viridis(4, discrete = T, begin=0, end=0.8)$palette(4)
-# my_palette <- c("#a1dab4","#41b6c4","#2c7fb8","#253494") # YlGnBu without Yl
+# my_palette <- viridis_pal()(4)
+# my_palette <- c("#a1dab4","#41b6c4","#2c7fb8","#253494")    # YlGnBu without Yl
 # my_palette <- c("#ffffcc", "#a1dab4", "#41b6c4", "#225ea8") # YlGnBu with Yl
 my_palette <- c("#d7191c", "#abdda4", "#fdae61", "#2b83ba") # Spectral
+ra_col <- list(
+	rora = my_palette[1],
+	fora = my_palette[3],
+	rola = my_palette[2],
+	allr = my_palette[4],
+	unif1000 = "#440154",
+	unif11 = "#31688E",
+	subn  = "#35B779" ,
+	unif01 = "#FDE725")
 
 # Be careful with this: list(df1,df2) will give different results
 # than list(rbind(df1,df2)) because it will find the minimum of _each_ result.
 # The former gives you the "chunkier" bins, the latter gives you exactly
 # one bin per unique floating point number.
-count_bins <- function(l) {
-	binc <- sapply(l, function(x) {length(unique(sort(x$error_mpfr)))})
+count_bins <- function(l, by = 'error_mpfr') {
+	binc <- sapply(l, function(x) {length(unique(sort(get(by, x))))})
 	# Odd looks better for symmetry about 0
 	return(min(ifelse(binc%%2 == 0, binc + 1, binc)))
 }
@@ -42,29 +52,37 @@ distr_expr <- function(x) {
 		"unknown notation, check distr_expr")
 }
 
-# Reading in different distributions
-read_experiment <- function(fn) {
+# Reading in different distributions.
+read_experiment <- function(fn, fields = c("order","fp_decimal")) {
 	df <- read.table(file = fn, sep = "\t", header = TRUE)
 	stopifnot(all(df$veclen == df$veclen[1]))
 	veclen <- df$veclen[1]
 	# Filter and get more R-friendly
 	colnames(df)[4] <- "fp_decimal"
-	df = subset(df, select = c("order","fp_decimal"))
+	df = subset(df, select = fields)
 	return(df)
 }
 
-# Absolute Error
-rel_err <- function(x, r) { abs(x$error_mpfr - r)/r }
+# Read veclen and mpfr. Returns a list, doesn't do error checking.
+read_mpfr <- function(fn) {
+	df <- read.table(file = fn, sep = "\t", header = TRUE, nrows = 3,
+		colClasses = c("character"))
+	veclen <- as.integer(df$veclen[1])
+	la_mpfr <- df[df$order == "MPFR(3324) left assoc",]$FP...a.
+	la_mpfr <- mpfr(la_mpfr, 3324, base=16)
+	return(list(veclen,la_mpfr))
+}
+
+# Relative Error
+rel_err <- function(x, r) { abs((x$fp_decimal - r)/r) }
 
 rel_err_mpfr <- function(x, r) {
-	rm <- mpfr(r, 3324)
-	xm <- mpfr(x$error_mpfr, 3324)
-	abs(xm - rm)/rm
+	stopifnot(class(r) == "mpfr")
+	xm <- mpfr(x$fp_decimal, 3324)
+	abs((xm - r)/r)
 }
 
 # Geometric Mean
-geom_mean <- function(x) { exp(mean(log(x))) }
-
 geom_mean <- function(x) { exp(mean(log(x))) }
 
 #####################################################################
@@ -72,30 +90,42 @@ geom_mean <- function(x) { exp(mean(log(x))) }
 #####################################################################
 
 for (x in c("runif11", "runif1000", "rsubn")) {
-	df <- read_experiment(paste0("experiments/assoc-",x,".tsv"))
+	fn <- paste0("experiments/assoc-",x,"-big.tsv")
+	df <- read_experiment(fn)
+	l <- read_mpfr(fn)
+	veclen <- l[[1]]
+	mpfr_1000_m <- l[[2]]
 	canonical <- df$fp_decimal[df$order == "Left assoc"]
 	mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
 
 	allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
 	# Convert from the raw numbers to errors with respect to mpfr
 	allr$error_mpfr <- mpfr_1000 - allr$fp_decimal
-	ra  <- allr[allr$order == "Random assoc",]
-	sla <- allr[allr$order == "Shuffle l assoc",]
-	sra <- allr[allr$order == "Shuffle rand assoc",]
-	cat(sprintf("*** %s ***\nrel error:\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
-		x, mean(ra$error_mpfr), mean(sla$error_mpfr), mean(sra$error_mpfr)))
-	cat(sprintf("rel error:\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
-		mean(rel_err(ra,mpfr_1000)),
-		mean(rel_err(sla,mpfr_1000)),
-		mean(rel_err(sra,mpfr_1000))))
-	cat(sprintf("Unique:\nra:\t%d\nsla:\t%d\nsra:\t%d\n",
-		length(unique(ra$error_mpfr)),
-		length(unique(sla$error_mpfr)),
-		length(unique(sra$error_mpfr))))
-	cat(sprintf("Nonidentical (ra - sra): %d\n",
-		length(intersect(ra$error_mpfr, sra$error_mpfr))))
+	fora <- allr[allr$order == "Random assoc",]
+	rola <- allr[allr$order == "Shuffle l assoc",]
+	rora <- allr[allr$order == "Shuffle rand assoc",]
+	cat(sprintf("*** %s ***\n",x))
 	cat(sprintf("min:\t%.20f\nmax:\t%.20f\ncanon:\t%.20f\nmpfr:\t%.20f\n",
 		min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
+	cat(sprintf("abs error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+		mean(abs(fora$error_mpfr)),
+		mean(abs(rola$error_mpfr)),
+		mean(abs(rora$error_mpfr))))
+	cat(sprintf("rel error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+		mean(rel_err(fora,mpfr_1000)),
+		mean(rel_err(rola,mpfr_1000)),
+		mean(rel_err(rora,mpfr_1000))))
+	# This is pretty slow
+	# cat(sprintf("rel error mpfr:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+	# 	mean(rel_err_mpfr(fora,mpfr_1000_m)),
+	# 	mean(rel_err_mpfr(rola,mpfr_1000_m)),
+	# 	mean(rel_err_mpfr(rora,mpfr_1000_m))))
+	cat(sprintf("Unique:\nfora:\t%d\nrola:\t%d\nrora:\t%d\n",
+		length(unique(fora$error_mpfr)),
+		length(unique(rola$error_mpfr)),
+		length(unique(rora$error_mpfr))))
+	cat(sprintf("Nonidentical (fora - rora): %d\n",
+		length(intersect(fora$error_mpfr, rora$error_mpfr))))
 }
 
 # unif(0,1) is separate because we focus on this one a lot
@@ -106,19 +136,19 @@ mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
 allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
 # Convert from the raw numbers to errors with respect to mpfr
 allr$error_mpfr <- mpfr_1000 - allr$fp_decimal
-ra  <- allr[allr$order == "Random assoc",]
-sla <- allr[allr$order == "Shuffle l assoc",]
-sra <- allr[allr$order == "Shuffle rand assoc",]
+fora  <- allr[allr$order == "Random assoc",]
+rola <- allr[allr$order == "Shuffle l assoc",]
+rora <- allr[allr$order == "Shuffle rand assoc",]
 
-cat(sprintf("*** %s ***\nrel error:\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
-	distr, mean(ra$error_mpfr), mean(sla$error_mpfr), mean(sra$error_mpfr)))
-cat(sprintf("rel error:\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
-	mean(rel_err(ra,mpfr_1000)),
-	mean(rel_err(sla,mpfr_1000)),
-	mean(rel_err(sra,mpfr_1000))))
-cat(sprintf("Unique:\nra:\t%d\nsla:\t%d\nsra:\t%d\n",
-	length(unique(ra$error_mpfr)), length(unique(sla$error_mpfr)), length(unique(sra$error_mpfr))))
-cat(sprintf("Nonidentical (ra - sra): %d\n", length(intersect(ra$error_mpfr, sra$error_mpfr))))
+cat(sprintf("*** %s ***\nabs error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+	distr, mean(fora$error_mpfr), mean(rola$error_mpfr), mean(rora$error_mpfr)))
+cat(sprintf("rel error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+	mean(rel_err(fora,mpfr_1000)),
+	mean(rel_err(rola,mpfr_1000)),
+	mean(rel_err(rora,mpfr_1000))))
+cat(sprintf("Unique:\nfora:\t%d\nrola:\t%d\nrora:\t%d\n",
+	length(unique(fora$error_mpfr)), length(unique(rola$error_mpfr)), length(unique(rora$error_mpfr))))
+cat(sprintf("Nonidentical (fora - rora): %d\n", length(intersect(fora$error_mpfr, rora$error_mpfr))))
 cat(sprintf("min:\t%.20f\nmax:\t%.20f\ncanon:\t%.20f\nmpfr:\t%.20f\n",
 	min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
 min_diff <- min(allr$error_mpfr)
@@ -130,7 +160,7 @@ max_diff <- max(allr$error_mpfr)
 
 # Make some scatterplots. Not particularly useful (also huge pdf files!) so
 # they're commented out
-for (x in c()) { # c("ra", "sla", "sra", "allr")) {
+for (x in c()) { # c("fora", "rola", "rora", "allr")) {
 	cdf <- get(x)
 	cdf <- na.omit(cdf)
 	p <- ggplot(cdf) +
@@ -148,43 +178,43 @@ for (x in c()) { # c("ra", "sla", "sra", "allr")) {
 #####################################################################
 
 # Just Shuffling random-associative
-binc <- count_bins(list(sra))
-p <- ggplot(sra, aes(x = error_mpfr)) +
-	geom_histogram(data = sra, bins = binc, fill = my_palette[2], alpha = 0.7) +
+binc <- count_bins(list(rora))
+p <- ggplot(rora, aes(x = error_mpfr)) +
+	geom_histogram(data = rora, bins = binc, fill = ra_col$rora, alpha = 0.7) +
 	geom_vline(aes(xintercept = 0.0, color = "Zero"), # No error
 			linetype = "solid", alpha = 1.0, show.legend = TRUE) +
 	geom_vline( # Shuffle random assoc
 		aes(xintercept = mean(error_mpfr), color = "Mean"),
 		linetype = "solid", alpha = 1.0, show.legend = TRUE) +
-	scale_color_manual(name = NULL, values = c(Mean = my_palette[2], Zero = "black")) +
+	scale_color_manual(name = NULL, values = c(Mean = ra_col$rora, Zero = "black")) +
 	theme(legend.position = c(0.8, 0.9), legend.direction="horizontal") +
 	labs(title = "Shuffling and Random Associativity",
-		caption = paste0("n = ", format(nrow(sra),big.mark=","),
+		caption = paste0("n = ", format(nrow(rora),big.mark=","),
 		                 "\n|A| = ", format(veclen, big.mark=","))) +
 	ylab("Count") +
 	xlab(expression(sum[mpfr] - sum[double]))
-ggsave(paste0("figures/assoc-",distr,"-hist-sra.pdf"), plot = p, height = height)
+ggsave(paste0("figures/assoc-",distr,"-hist-rora.pdf"), plot = p, height = height)
 
 # Shuffle Random Associations vs. Shuffle, left-associative
 # Second data frame for vertical lines
 vlines <- data.frame(
 	"Statistic" = c("Zero", "Canon", "bar('ROLA')", "bar('RORA')"),
-	"Value"     = c(0.0, mpfr_1000 - canonical, mean(sla$error_mpfr), mean(sra$error_mpfr)),
-	"Color"     = c("black", "#0042ff", my_palette[1], my_palette[2]),
+	"Value"     = c(0.0, mpfr_1000 - canonical, mean(rola$error_mpfr), mean(rora$error_mpfr)),
+	"Color"     = c("black", "#0042ff", ra_col$rola, ra_col$rora),
 	"Linetype"  = c("solid", "dotdash", "dashed", "dotted"),
 	stringsAsFactors = FALSE)
 hist_style <- data.frame(
 	"Statistic" = c("ROLA", "RORA"),
-	"Fill"      = c(my_palette[1], my_palette[2]))
+	"Fill"      = c(ra_col$rola, ra_col$rora))
 Labels <- to_expr(vlines$Statistic)
 # So the orderings are just as as I wrote them above
 vlines$Statistic <- factor(
 	vlines$Statistic, levels = vlines$Statistic, ordered = TRUE)
 hist_style$Statistic <- factor(
 	hist_style$Statistic, levels = hist_style$Statistic, ordered = TRUE)
-binc <- count_bins(list(sla,sra))
-# binc <- count_bins(list(rbind(sra,sla))) # This gives some interesting peaks for sra
-p <- ggplot(rbind(sla,sra), aes(x = error_mpfr, fill = order)) +
+binc <- count_bins(list(rola,rora))
+# binc <- count_bins(list(rbind(rola,rora))) # This gives some interesting peaks for rora
+p <- ggplot(rbind(rola,rora), aes(x = error_mpfr, fill = order)) +
 	geom_histogram(bins = 101, position = "identity", alpha = 0.6, color = "black") +
 	geom_vline(data = vlines, show.legend = TRUE,
 		aes(xintercept = Value, color = Statistic, linetype = Statistic)) +
@@ -198,7 +228,7 @@ p <- ggplot(rbind(sla,sra), aes(x = error_mpfr, fill = order)) +
 		labels = hist_style$Statistic) +
 	guides(fill = guide_legend(override.aes = list(linetype = 0))) +
 	labs(title = "Random Associativity With and Without Random Ordering",
-		caption = bquote(n == .(format(nrow(sla),big.mark=","))*"," ~~~
+		caption = bquote(n == .(format(nrow(rola),big.mark=","))*"," ~~~
 						 "|A|" == .(format(veclen, big.mark=","))*"," ~~~
 		                 .(distr_expr(distr)))) +
 	theme(legend.title = element_blank(),
@@ -207,31 +237,25 @@ p <- ggplot(rbind(sla,sra), aes(x = error_mpfr, fill = order)) +
 		legend.box = "horizontal") +
 	ylab("Count") +
 	xlab(expression(sum[mpfr] - sum[double]))
-ggsave(paste0("figures/assoc-",distr,"-hist-sra-sla.pdf"), plot = p, height = 5)
-
-# FIXME
-	# geom_segment(aes(
-	# 	x = max(abs(error_mpfr))/2,
-	# 	y = 0.7*max(p_count),
-	# 	xend = max(abs(error_mpfr)) + 1e9*DBL_MIN, #FIXME
-	# 	yend = 0.7*max(p_count)))
+ggsave(paste0("figures/assoc-",distr,"-hist-rola-rora.pdf"), plot = p, height = 4, width = 6)
 
 # The two that look very similar
 vlines <- data.frame(
 	"Statistic" = c("Zero", "bar('FORA')", "bar('RORA')", "'max(Error)'"),
-	"Value"     = c(0.0, mean(ra$error_mpfr), mean(sra$error_mpfr), max(max(ra$error_mpfr),max(sra$error_mpfr))),
-	"Color"     = c("black", my_palette[1], my_palette[3], "#0042ff"),
+	"Value"     = c(0.0, mean(fora$error_mpfr), mean(rora$error_mpfr), max(max(fora$error_mpfr),max(rora$error_mpfr))),
+	"Color"     = c("black", ra_col$fora, ra_col$rora, "#0042ff"),
 	"Linetype"  = c("solid", "dotdash", "dashed", "dotted"),
 	stringsAsFactors = FALSE)
 vlines$Statistic <- factor(
 	vlines$Statistic, levels = vlines$Statistic, ordered = TRUE)
 Labels <- to_expr(vlines$Statistic)
-binc <- count_bins(list(rbind(ra,sra)))
-p <- ggplot(rbind(ra,sra), aes(x = abs(error_mpfr))) +
+binc <- count_bins(list(rbind(fora,rora)))
+p <- ggplot(rbind(fora,rora), aes(x = abs(error_mpfr))) +
 	# Histogram info and legnd
 	geom_histogram(bins = binc, aes(fill = order),
 		position = "identity", color = "black", alpha = 0.6) +
-	scale_fill_manual(name = "order", values = my_palette[c(1,3)],
+	scale_fill_manual(name = "order",
+		values = c(ra_col$fora, ra_col$rora),
 		labels = c("FORA", "RORA")) +
 	guides(fill = guide_legend(override.aes = list(linetype = 0))) +
 	# Vlines info and legend
@@ -247,19 +271,118 @@ p <- ggplot(rbind(ra,sra), aes(x = abs(error_mpfr))) +
 		legend.direction = "horizontal",
 		legend.box = "horizontal") +
 	labs(title = "Random Associativity With and Without Random Ordering",
-		caption = bquote(n == .(format(nrow(sla),big.mark=","))*"," ~~~
+		caption = bquote(n == .(format(nrow(rola),big.mark=","))*"," ~~~
 						 "|A|" == .(format(veclen, big.mark=","))*"," ~~~
 		                 .(distr_expr(distr)))) +
 	ylab("Count") +
 	xlab(expression(paste("Error as |",sum[mpfr] - sum[double],"|")))
-ggsave(paste0("figures/assoc-",distr,"-hist-ra-sra-abs.pdf"), plot = p, height = 4)
+ggsave(paste0("figures/assoc-",distr,"-hist-fora-rora-abs.pdf"), plot = p, height = 3.5, width = 6)
+
+# FIXME: I want to put the max error bounds...
+	# geom_segment(aes(
+	# 	x = max(abs(error_mpfr))/2,
+	# 	y = 0.7*max(p_count),
+	# 	xend = max(abs(error_mpfr)) + 1e9*DBL_MIN, #FIXME
+	# 	yend = 0.7*max(p_count)))
 
 # Histogram for allr (separate) - I don't think this is informative
 binc <- sapply(list(allr), function(x) {length(unique(sort(x$error_mpfr)))})
 binc <- ifelse(binc%%2 == 0, binc + 1, binc) # Odd looks better for symmetry about 0
 p <- ggplot(allr, aes(x = error_mpfr)) +
-	geom_histogram(bins = binc, alpha = 0.8, fill = my_palette[4]) +
+	geom_histogram(bins = binc, alpha = 0.8, fill = ra_col$allr) +
 	geom_vline( # Mean of everything --- not sure this is helpful
 		aes(xintercept = mean(error_mpfr)),
 			color = "blue", linetype = "dotted", alpha = 1.0)
 ggsave(paste0("figures/assoc-",distr,"-hist-allr.pdf"), plot = p, height = height)
+
+#####################################################################
+###             Comparing Uniform [0,1] and [-1,1]                ###
+#####################################################################
+get_distribution_data <- function(fn) {
+	df <- read_experiment(fn, fields = c("order","distribution","fp_decimal"))
+	l <- read_mpfr(fn)
+	veclen <- l[[1]]
+	mpfr_1000_m <- l[[2]]
+	canonical <- df$fp_decimal[df$order == "Left assoc"]
+	mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
+	allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
+	allr$error_mpfr <- mpfr_1000 - allr$fp_decimal
+	allr$relative_error <- rel_err(allr, mpfr_1000)
+
+	fora <- allr[allr$order == "Random assoc",]
+	rola <- allr[allr$order == "Shuffle l assoc",]
+	rora <- allr[allr$order == "Shuffle rand assoc",]
+	return(list(
+		veclen = veclen,
+		mpfr_1000_m = mpfr_1000_m,
+		canonical = canonical,
+		fora = fora,
+		rola = rola,
+		rora = rora
+	))
+}
+distr1 <- "unif01"
+fn <- paste0("experiments/assoc-r",distr1,"-big.tsv")
+l1 <- get_distribution_data(fn)
+distr2 <- "unif11"
+fn <- paste0("experiments/assoc-r",distr2,"-big.tsv")
+l2 <- get_distribution_data(fn)
+distr3 <- "unif1000"
+fn <- paste0("experiments/assoc-r",distr3,"-big.tsv")
+l3 <- get_distribution_data(fn)
+distr4 <- "subn"
+fn <- paste0("experiments/assoc-r",distr4,"-big.tsv")
+l4 <- get_distribution_data(fn)
+stopifnot(l1$veclen == l2$veclen && l2$veclen == l3$veclen)
+
+d1 <- l1$rora
+d2 <- l2$rora
+d3 <- l3$rora
+d4 <- l4$rora
+
+warning("fix this once unif[1,1] experiment re-completes")
+#stopifnot(nrow(d1) == nrow(d2) && nrow(d1) == nrow(d3))
+vlines <- data.frame(
+	"Statistic" = sapply(list(distr1,distr2,distr3,distr4), function(s){paste0("bar('",s,"')")}),
+	"Value"     = sapply(list(d1,d2,d3,d4), function(x){mean(x$relative_error)}),
+	"Color"     = sapply(list(distr1,distr2,distr3,distr4), function(x){get(x, ra_col)}),
+	"Linetype"  = c("solid", "dashed", "dotdash", "dotted"),
+	stringsAsFactors = FALSE)
+hist_style <- data.frame(
+	"Statistic" = c(distr1,distr2,distr3,distr4),
+	"Fill"      = sapply(list(distr1,distr2,distr3,distr4), function(x){get(x, ra_col)}),
+	stringsAsFactors = FALSE)
+# So the orderings are just as as I wrote them above
+vlines$Statistic <- factor(
+	vlines$Statistic, levels = vlines$Statistic, ordered = TRUE)
+hist_style$Statistic <- factor(
+	hist_style$Statistic, levels = hist_style$Statistic, ordered = TRUE)
+Labels <- to_expr(vlines$Statistic)
+binc <- count_bins(list(d1,d2,d3,d4), by = 'relative_error')
+binc <- 51
+p <- ggplot(rbind(d1,d2,d3,d4), aes(x = relative_error)) +
+    # Histograms
+    geom_histogram(bins = binc, aes(fill = distribution),
+        position = "identity", color = "black", alpha = 0.5) +
+	scale_fill_manual(name = "Histograms", guide = "legend",
+		values = hist_style$Fill,
+		labels = hist_style$Statistic) +
+	# Vlines
+	geom_vline(data = vlines, show.legend = TRUE,
+		aes(xintercept = Value, color = Statistic, linetype = Statistic)) +
+	scale_linetype_manual(name = "Lines", values = vlines$Linetype,
+		labels = Labels) +
+	scale_color_manual(name = "Lines", values = vlines$Color,
+		labels = Labels) +
+	guides(fill = guide_legend(override.aes = list(linetype = 0))) +
+	labs(title = "RORA with Different Distributions",
+		caption = bquote(n == .(format(nrow(d1),big.mark=","))*"," ~~~
+						 "|A|" == .(format(l1$veclen, big.mark=",")))) +
+	theme(legend.title = element_blank(),
+		legend.position = "top",
+		legend.direction = "horizontal",
+		legend.box = "horizontal") +
+	ylab("Count") +
+	xlab("Relative Error")
+ggsave(paste0("figures/assoc-all-distr-hist-rora.pdf"),
+	plot = p, height = 4, width = 7)
