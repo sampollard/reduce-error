@@ -1,6 +1,7 @@
 # Associativity experiments for uniform distribution
 library(ggplot2)
 library(reshape2)
+library(Rmpfr)
 
 #####################################################################
 ###                Helper Functions and Constants                 ###
@@ -8,7 +9,6 @@ library(reshape2)
 DBL_MIN <- 2.22507385850720138309e-308 # Machine Epsilon
 FLT_MIN <- 1.17549435e-38
 height <- 3
-distr <- 'runif01'
 # A modified https://colorbrewer2.org/#type=qualitative&scheme=Dark2
 # #               "orange"  "purple"  "cyan"    "magenta" "green"   "gold"    "brown"
 # my_palette <- c("#f78631","#605c96","#178564","#e7298a","#66a61e","#e6ab02","#a6761d")
@@ -28,23 +28,81 @@ count_bins <- function(l) {
 }
 
 # This is for taking a string with plotmath and turning it into an expression
-expr_vec <- function(x) {
+# NOTE: It would probably be better to do this using quote
+to_expr <- function(x) {
 	bquote(.(parse(text=as.character(x))))
 }
 
-#####################################################################
-###                       Reading In Data                         ###
-#####################################################################
-df <- read.table(file = paste0("experiments/assoc-",distr,".tsv"), sep = '\t', header = TRUE)
-stopifnot(all(df$veclen == df$veclen[1]))
-veclen <- df$veclen[1]
-# Filter and get more R-friendly
-colnames(df)[4] <- "fp_decimal"
-df = subset(df, select = c("order","fp_decimal"))
+distr_expr <- function(x) {
+	switch(x,
+		"runif01"   = quote(A[k] %~% unif(0,1)),
+		"runif11"   = quote(A[k] %~% unif(-1,1)),
+		"runif1000" = quote(A[k] %~% unif(-1000,1000)),
+		"rsubn"     = quote(A[k] %~% subn(0,1)),
+		"unknown notation, check distr_expr")
+}
 
+# Reading in different distributions
+read_experiment <- function(fn) {
+	df <- read.table(file = fn, sep = "\t", header = TRUE)
+	stopifnot(all(df$veclen == df$veclen[1]))
+	veclen <- df$veclen[1]
+	# Filter and get more R-friendly
+	colnames(df)[4] <- "fp_decimal"
+	df = subset(df, select = c("order","fp_decimal"))
+	return(df)
+}
+
+# Absolute Error
+rel_err <- function(x, r) { abs(x$error_mpfr - r)/r }
+
+rel_err_mpfr <- function(x, r) {
+	rm <- mpfr(r, 3324)
+	xm <- mpfr(x$error_mpfr, 3324)
+	abs(xm - rm)/rm
+}
+
+# Geometric Mean
+geom_mean <- function(x) { exp(mean(log(x))) }
+
+geom_mean <- function(x) { exp(mean(log(x))) }
+
+#####################################################################
+###         Reading In Data and Interesting Values                ###
+#####################################################################
+
+for (x in c("runif11", "runif1000", "rsubn")) {
+	df <- read_experiment(paste0("experiments/assoc-",x,".tsv"))
+	canonical <- df$fp_decimal[df$order == "Left assoc"]
+	mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
+
+	allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
+	# Convert from the raw numbers to errors with respect to mpfr
+	allr$error_mpfr <- mpfr_1000 - allr$fp_decimal
+	ra  <- allr[allr$order == "Random assoc",]
+	sla <- allr[allr$order == "Shuffle l assoc",]
+	sra <- allr[allr$order == "Shuffle rand assoc",]
+	cat(sprintf("*** %s ***\nrel error:\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
+		x, mean(ra$error_mpfr), mean(sla$error_mpfr), mean(sra$error_mpfr)))
+	cat(sprintf("rel error:\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
+		mean(rel_err(ra,mpfr_1000)),
+		mean(rel_err(sla,mpfr_1000)),
+		mean(rel_err(sra,mpfr_1000))))
+	cat(sprintf("Unique:\nra:\t%d\nsla:\t%d\nsra:\t%d\n",
+		length(unique(ra$error_mpfr)),
+		length(unique(sla$error_mpfr)),
+		length(unique(sra$error_mpfr))))
+	cat(sprintf("Nonidentical (ra - sra): %d\n",
+		length(intersect(ra$error_mpfr, sra$error_mpfr))))
+	cat(sprintf("min:\t%.20f\nmax:\t%.20f\ncanon:\t%.20f\nmpfr:\t%.20f\n",
+		min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
+}
+
+# unif(0,1) is separate because we focus on this one a lot
+distr <- "runif01"
+df <- read_experiment(paste0("experiments/assoc-",distr,".tsv"))
 canonical <- df$fp_decimal[df$order == "Left assoc"]
 mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
-
 allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
 # Convert from the raw numbers to errors with respect to mpfr
 allr$error_mpfr <- mpfr_1000 - allr$fp_decimal
@@ -52,11 +110,12 @@ ra  <- allr[allr$order == "Random assoc",]
 sla <- allr[allr$order == "Shuffle l assoc",]
 sra <- allr[allr$order == "Shuffle rand assoc",]
 
-#####################################################################
-###     Interesting Values and Uninteresting Scatterplots         ###
-#####################################################################
-cat(sprintf("Means:\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
-	mean(ra$error_mpfr), mean(sla$error_mpfr), mean(sra$error_mpfr)))
+cat(sprintf("*** %s ***\nrel error:\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
+	distr, mean(ra$error_mpfr), mean(sla$error_mpfr), mean(sra$error_mpfr)))
+cat(sprintf("rel error:\nra:\t%.20f\nsla:\t%.20f\nsra:\t%.20f\n",
+	mean(rel_err(ra,mpfr_1000)),
+	mean(rel_err(sla,mpfr_1000)),
+	mean(rel_err(sra,mpfr_1000))))
 cat(sprintf("Unique:\nra:\t%d\nsla:\t%d\nsra:\t%d\n",
 	length(unique(ra$error_mpfr)), length(unique(sla$error_mpfr)), length(unique(sra$error_mpfr))))
 cat(sprintf("Nonidentical (ra - sra): %d\n", length(intersect(ra$error_mpfr, sra$error_mpfr))))
@@ -65,7 +124,12 @@ cat(sprintf("min:\t%.20f\nmax:\t%.20f\ncanon:\t%.20f\nmpfr:\t%.20f\n",
 min_diff <- min(allr$error_mpfr)
 max_diff <- max(allr$error_mpfr)
 
-# Make some scatterplots. Not particularly useful so they're commented out
+#####################################################################
+###                  Uninteresting Scatterplots                   ###
+#####################################################################
+
+# Make some scatterplots. Not particularly useful (also huge pdf files!) so
+# they're commented out
 for (x in c()) { # c("ra", "sla", "sra", "allr")) {
 	cdf <- get(x)
 	cdf <- na.omit(cdf)
@@ -112,7 +176,7 @@ vlines <- data.frame(
 hist_style <- data.frame(
 	"Statistic" = c("ROLA", "RORA"),
 	"Fill"      = c(my_palette[1], my_palette[2]))
-Labels <- expr_vec(vlines$Statistic)
+Labels <- to_expr(vlines$Statistic)
 # So the orderings are just as as I wrote them above
 vlines$Statistic <- factor(
 	vlines$Statistic, levels = vlines$Statistic, ordered = TRUE)
@@ -133,8 +197,10 @@ p <- ggplot(rbind(sla,sra), aes(x = error_mpfr, fill = order)) +
 		values = hist_style$Fill,
 		labels = hist_style$Statistic) +
 	guides(fill = guide_legend(override.aes = list(linetype = 0))) +
-	labs(title = "Random Ordering With and Without Random Associativity",
-		caption = paste0("n = ", format(nrow(sla),big.mark=","), "\n|A| = ", format(veclen, big.mark=","))) +
+	labs(title = "Random Associativity With and Without Random Ordering",
+		caption = bquote(n == .(format(nrow(sla),big.mark=","))*"," ~~~
+						 "|A|" == .(format(veclen, big.mark=","))*"," ~~~
+		                 .(distr_expr(distr)))) +
 	theme(legend.title = element_blank(),
 		legend.position = "top",
 		legend.direction = "horizontal",
@@ -159,7 +225,7 @@ vlines <- data.frame(
 	stringsAsFactors = FALSE)
 vlines$Statistic <- factor(
 	vlines$Statistic, levels = vlines$Statistic, ordered = TRUE)
-Labels <- expr_vec(vlines$Statistic)
+Labels <- to_expr(vlines$Statistic)
 binc <- count_bins(list(rbind(ra,sra)))
 p <- ggplot(rbind(ra,sra), aes(x = abs(error_mpfr))) +
 	# Histogram info and legnd
@@ -181,7 +247,9 @@ p <- ggplot(rbind(ra,sra), aes(x = abs(error_mpfr))) +
 		legend.direction = "horizontal",
 		legend.box = "horizontal") +
 	labs(title = "Random Associativity With and Without Random Ordering",
-		caption = paste0("n = ", format(nrow(sla),big.mark=","), "\n|A| = ", format(veclen, big.mark=","))) +
+		caption = bquote(n == .(format(nrow(sla),big.mark=","))*"," ~~~
+						 "|A|" == .(format(veclen, big.mark=","))*"," ~~~
+		                 .(distr_expr(distr)))) +
 	ylab("Count") +
 	xlab(expression(paste("Error as |",sum[mpfr] - sum[double],"|")))
 ggsave(paste0("figures/assoc-",distr,"-hist-ra-sra-abs.pdf"), plot = p, height = 4)

@@ -441,7 +441,7 @@ smpirun -np 16 \
 ```
 
 
-## Back to Algorithmic Sampling
+## Back to Sampling
 ### 6/26
 Reading Volume 4, fascicle 4a, you would think Knuth is getting paid whatever
 the opposite of "per word" is. It took me a very long time to understand what
@@ -519,13 +519,15 @@ Apparently ggsave
 [(it's an R problem as of 2015)](https://github.com/tidyverse/ggplot2/issues/268)
 doesn't update timestamps? Delete then rewrite... that's dumb :(
 
-#### 7/24
+## Running Experiments
 Getting lots of plots. Do this
 ```
 spack load mpfr@4.0.2
 USE_MPI=0 make -j assoc
 ```
-Should take about 2 hours???
+Should take about 2 hours??? Some other numbers:
+assoc_big takes about 50 hours
+assoc_deep takes about 30 minutes
 
 ### Combinatorics
 Number of ways to reduce a commutative, nonassociative operator:
@@ -649,7 +651,34 @@ Tough: making a string, then going to an expression,
 you _have_ to do `Labels <- expr_vec(vlines$Statistic)`,
 or else ggplot will not pick up that the rvalues are the same.
 
-### Next steps
+## 7/29 - Trying to get more statistics
+Using geometric mean, absolute error not particularly helpful.
+Some reduction orders are _almost_ perfect, should probably note those
+in a table or something?
+
+Also had trouble working with Rmpfr because I couldn't install gmp in R.
+
+Might email or make an issue [here](https://cran.r-project.org/web/packages/gmp/index.html)
+
+I also want to look into Downey's sampling stuff. That seems interesting, like
+it would get better coverage
+
+## Rmpfr Fever Dream
+I had to download gmp for R
+[here](https://cran.r-project.org/src/contrib/gmp_0.6-0.tar.gz),
+unpack it, edit configure.ac to include this
+```
+if test /opt/local != "$exec_prefix" -a /opt/local != "$prefix" ; then
+  CPPFLAGS="$CPPFLAGS -I/opt/local/include"
+  LDFLAGS="$LDFLAGS -L/opt/local/lib"
+fi
+```
+then run `autoreconf -i`, then run
+`install.packages("~/local/gmp/", repos = NULL, type="source")`
+(that's where I unzipped the gmp tarball), then
+`install.packages(Rmpfr)`. Whew.
+
+## Next steps
 
 1. ✓ Do runiform[-1,1]
 2. (low priority) Kahan Summation
