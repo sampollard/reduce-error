@@ -23,7 +23,11 @@ VERBOSITY = coll_base_verbose 0
 # Sizes
 VECLEN = 14400
 VECLEN_BIG = 72000000
+RAND_TRIALS = 50000
 VECLEN_RAND = 100000
+VECLEN_RAND_BIG = 2000000
+RAND_TRIALS_DEEP = 5000000
+VECLEN_RAND_DEEP = 256
 
 # SimGrid options
 #LOG_LEVEL = --log=smpi_colls.threshold:debug
@@ -127,15 +131,34 @@ assoc_quick : assoc_test
 	./assoc_test $(VECLEN_RAND) 10 rsubn
 
 assoc : assoc_test assoc01 assoc11 assoc1000 assocrsubn
-
 assoc01: assoc_test
-	./assoc_test $(VECLEN_RAND) 50000 runif[0,1]        > assoc-runif01.tsv
+	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[0,1]        > experiments/assoc-runif01.tsv
 assoc11: assoc_test
-	./assoc_test $(VECLEN_RAND) 50000 runif[-1,1]       > assoc-runif11.tsv
+	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[-1,1]       > experiments/assoc-runif11.tsv
 assoc1000: assoc_test
-	./assoc_test $(VECLEN_RAND) 50000 runif[-1000,1000] > assoc-runif1000.tsv
+	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[-1000,1000] > experiments/assoc-runif1000.tsv
 assocrsubn: assoc_test
-	./assoc_test $(VECLEN_RAND) 50000 rsubn             > assoc-rsubn.tsv
+	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) rsubn             > experiments/assoc-rsubn.tsv
+
+assoc_big : assoc_test assoc01_big assoc11_big assoc1000_big assocrsubn_big
+assoc01_big: assoc_test
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[0,1]        > experiments/assoc-runif01-big.tsv
+assoc11_big: assoc_test
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[-1,1]       > experiments/assoc-runif11-big.tsv
+assoc1000_big: assoc_test
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[-1000,1000] > experiments/assoc-runif1000-big.tsv
+assocrsubn_big: assoc_test
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) rsubn             > experiments/assoc-rsubn-big.tsv
+
+assoc_deep : assoc_test assoc01_deep assoc11_deep assoc1000_deep assocrsubn_deep
+assoc01_deep: assoc_test
+	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) runif[0,1]        > experiments/assoc-runif01-deep.tsv
+assoc11_deep: assoc_test
+	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) runif[-1,1]       > experiments/assoc-runif11-deep.tsv
+assoc1000_deep: assoc_test
+	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) runif[-1000,1000] > experiments/assoc-runif1000-deep.tsv
+assocrsubn_deep: assoc_test
+	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) rsubn             > experiments/assoc-rsubn-deep.tsv
 
 clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
