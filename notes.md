@@ -692,6 +692,30 @@ for consistency across plots but it makes things really difficult
 to add, say, a third histogram. Oh my, did I code this up poorly. This
 should all be in one dataframe and `melt`ed.
 
+I want to look into the work from 1993 but with just different associativity,
+not shuffling. But that seems not doable in time.
+
+
+## Nekbone
+### 8/3
+- `wget https://asc.llnl.gov/CORAL-benchmarks/Science/nekbone-2.3.4.tar.gz`
+- Edit `test/example1/nekpmpi` to have this line
+ ```
+ smpirun -hostfile hostfile-fattree-16.txt -platform fattree-16.xml \
+     --cfg=smpi/host-speed:3000000000f \
+     -np $2 ./nekbone $1 > $1.log.$2
+ ```
+- Add `test/example1/makenek` so `F77=smpiff` and `CC=smpicc` and
+ ```
+ cp ../../../topologies/fattree-16.xml .
+ cp ../../../topologies/hostfile-fattree-16.txt .
+ ```
+- `./makenek 1`
+- `./nekpmpi 1 4` : run nekbone on experiment 1 with 4 processors
+- Somehow, it worked! ha. Anyway, next need to edit to print higher precision
+- Change `cg.f` line 147 to `    6    format('cg:',i4,1p4e17.10)`
+
+
 ## Next steps
 
 1. ✓ Do runiform[-1,1]

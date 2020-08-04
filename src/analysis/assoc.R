@@ -9,6 +9,7 @@ library(Rmpfr)
 DBL_MIN <- 2.22507385850720138309e-308 # Machine Epsilon
 FLT_MIN <- 1.17549435e-38
 height <- 3
+EPS <- 2^-53
 # Color Mappings:
 # A modified https://colorbrewer2.org/#type=qualitative&scheme=Dark2
 # #               "orange"  "purple"  "cyan"    "magenta" "green"   "gold"    "brown"
@@ -45,10 +46,10 @@ to_expr <- function(x) {
 
 distr_expr <- function(x) {
 	switch(x,
-		"runif01"   = quote(A[k] %~% unif(0,1)),
-		"runif11"   = quote(A[k] %~% unif(-1,1)),
-		"runif1000" = quote(A[k] %~% unif(-1000,1000)),
-		"rsubn"     = quote(A[k] %~% subn(0,1)),
+		"unif01"   = quote(A[k] %~% unif(0,1)),
+		"unif11"   = quote(A[k] %~% unif(-1,1)),
+		"unif1000" = quote(A[k] %~% unif(-1000,1000)),
+		"subn"     = quote(A[k] %~% subn(0,1)),
 		"unknown notation, check distr_expr")
 }
 
@@ -85,12 +86,22 @@ rel_err_mpfr <- function(x, r) {
 # Geometric Mean
 geom_mean <- function(x) { exp(mean(log(x))) }
 
+# Analytical Error Bounds
+analytical_bound <- function(n, distr) {
+	s <- switch(distr,
+		"unif01"   = 1*n,
+		"unif11"   = 1*n,
+		"unif1000" = 1000*n,
+		"subn"     = 1*n)
+	return(EPS*(n-1)*s + EPS^2)
+}
+
 #####################################################################
 ###         Reading In Data and Interesting Values                ###
 #####################################################################
 
-for (x in c("runif11", "runif1000", "rsubn")) {
-	fn <- paste0("experiments/assoc-",x,"-big.tsv")
+for (x in c("unif11", "unif1000", "subn")) {
+	fn <- paste0("experiments/assoc-r",x,"-big.tsv")
 	df <- read_experiment(fn)
 	l <- read_mpfr(fn)
 	veclen <- l[[1]]
@@ -107,6 +118,7 @@ for (x in c("runif11", "runif1000", "rsubn")) {
 	cat(sprintf("*** %s ***\n",x))
 	cat(sprintf("min:\t%.20f\nmax:\t%.20f\ncanon:\t%.20f\nmpfr:\t%.20f\n",
 		min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
+	cat(sprintf("analy:\t%.20f\n", analytical_bound(veclen, x)))
 	cat(sprintf("abs error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
 		mean(abs(fora$error_mpfr)),
 		mean(abs(rola$error_mpfr)),
@@ -129,8 +141,8 @@ for (x in c("runif11", "runif1000", "rsubn")) {
 }
 
 # unif(0,1) is separate because we focus on this one a lot
-distr <- "runif01"
-df <- read_experiment(paste0("experiments/assoc-",distr,".tsv"))
+distr <- "unif01"
+df <- read_experiment(paste0("experiments/assoc-r",distr,".tsv"))
 canonical <- df$fp_decimal[df$order == "Left assoc"]
 mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
 allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
@@ -140,8 +152,14 @@ fora  <- allr[allr$order == "Random assoc",]
 rola <- allr[allr$order == "Shuffle l assoc",]
 rora <- allr[allr$order == "Shuffle rand assoc",]
 
-cat(sprintf("*** %s ***\nabs error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
-	distr, mean(fora$error_mpfr), mean(rola$error_mpfr), mean(rora$error_mpfr)))
+cat(sprintf("*** %s ***\n", distr))
+cat(sprintf("min:\t%.20f\nmax:\t%.20f\ncanon:\t%.20f\nmpfr:\t%.20f\n",
+	min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
+cat(sprintf("analy:\t%.20f\n", analytical_bound(veclen, distr)))
+cat(sprintf("abs error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+	mean(abs(fora$error_mpfr)),
+	mean(abs(rola$error_mpfr)),
+	mean(abs(rora$error_mpfr))))
 cat(sprintf("rel error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
 	mean(rel_err(fora,mpfr_1000)),
 	mean(rel_err(rola,mpfr_1000)),
@@ -149,8 +167,6 @@ cat(sprintf("rel error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
 cat(sprintf("Unique:\nfora:\t%d\nrola:\t%d\nrora:\t%d\n",
 	length(unique(fora$error_mpfr)), length(unique(rola$error_mpfr)), length(unique(rora$error_mpfr))))
 cat(sprintf("Nonidentical (fora - rora): %d\n", length(intersect(fora$error_mpfr, rora$error_mpfr))))
-cat(sprintf("min:\t%.20f\nmax:\t%.20f\ncanon:\t%.20f\nmpfr:\t%.20f\n",
-	min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
 min_diff <- min(allr$error_mpfr)
 max_diff <- max(allr$error_mpfr)
 
@@ -169,7 +185,7 @@ for (x in c()) { # c("fora", "rola", "rora", "allr")) {
 		geom_point(aes(color = factor(order))) +
 		geom_hline(yintercept = 0.0, color = "black") +
 		geom_hline(yintercept = mpfr_1000 - canonical, color = "red", show.legend = TRUE)
-	ggsave(paste0("figures/assoc-",distr,"-",x,".pdf"), plot = p, height = height)
+	ggsave(paste0("figures/assoc-r",distr,"-",x,".pdf"), plot = p, height = height)
 }
 #rm(cdf)
 
@@ -193,7 +209,7 @@ p <- ggplot(rora, aes(x = error_mpfr)) +
 		                 "\n|A| = ", format(veclen, big.mark=","))) +
 	ylab("Count") +
 	xlab(expression(sum[mpfr] - sum[double]))
-ggsave(paste0("figures/assoc-",distr,"-hist-rora.pdf"), plot = p, height = height)
+ggsave(paste0("figures/assoc-r",distr,"-hist-rora.pdf"), plot = p, height = height)
 
 # Shuffle Random Associations vs. Shuffle, left-associative
 # Second data frame for vertical lines
@@ -237,7 +253,7 @@ p <- ggplot(rbind(rola,rora), aes(x = error_mpfr, fill = order)) +
 		legend.box = "horizontal") +
 	ylab("Count") +
 	xlab(expression(sum[mpfr] - sum[double]))
-ggsave(paste0("figures/assoc-",distr,"-hist-rola-rora.pdf"), plot = p, height = 4, width = 6)
+ggsave(paste0("figures/assoc-r",distr,"-hist-rola-rora.pdf"), plot = p, height = 4, width = 6)
 
 # The two that look very similar
 vlines <- data.frame(
@@ -276,7 +292,7 @@ p <- ggplot(rbind(fora,rora), aes(x = abs(error_mpfr))) +
 		                 .(distr_expr(distr)))) +
 	ylab("Count") +
 	xlab(expression(paste("Error as |",sum[mpfr] - sum[double],"|")))
-ggsave(paste0("figures/assoc-",distr,"-hist-fora-rora-abs.pdf"), plot = p, height = 3.5, width = 6)
+ggsave(paste0("figures/assoc-r",distr,"-hist-fora-rora-abs.pdf"), plot = p, height = 3.5, width = 6)
 
 # FIXME: I want to put the max error bounds...
 	# geom_segment(aes(
@@ -293,7 +309,7 @@ p <- ggplot(allr, aes(x = error_mpfr)) +
 	geom_vline( # Mean of everything --- not sure this is helpful
 		aes(xintercept = mean(error_mpfr)),
 			color = "blue", linetype = "dotted", alpha = 1.0)
-ggsave(paste0("figures/assoc-",distr,"-hist-allr.pdf"), plot = p, height = height)
+ggsave(paste0("figures/assoc-r",distr,"-hist-allr.pdf"), plot = p, height = height)
 
 #####################################################################
 ###             Comparing Uniform [0,1] and [-1,1]                ###
@@ -341,7 +357,7 @@ d3 <- l3$rora
 d4 <- l4$rora
 
 warning("fix this once unif[1,1] experiment re-completes")
-#stopifnot(nrow(d1) == nrow(d2) && nrow(d1) == nrow(d3))
+#stopifnot(nrow(d1) == nrow(d2) && nrow(d1) == nrow(d3) && nrow(d1) == nrow(d3) && nrow(d4) == nrow(d1))
 vlines <- data.frame(
 	"Statistic" = sapply(list(distr1,distr2,distr3,distr4), function(s){paste0("bar('",s,"')")}),
 	"Value"     = sapply(list(d1,d2,d3,d4), function(x){mean(x$relative_error)}),
