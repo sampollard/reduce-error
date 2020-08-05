@@ -1,0 +1,7 @@
+rm -f logfile
+mv $1.log.$2 $1.log1.$2
+smpirun -hostfile ../../../../topologies/hostfile-fattree-16.txt \
+	-platform ../../../../topologies/fattree-16.xml \
+	--cfg=smpi/host-speed:90000000000f \
+	-np $2 ./nekbone $1 > $1.log.$2
+ln $1.log.$2 logfile
