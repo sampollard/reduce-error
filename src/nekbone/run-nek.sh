@@ -10,3 +10,8 @@ if [ ! -d "test" ]; then
 fi
 
 # Then, run lots of experiments
+
+cd "test/example1/"
+./makenek
+./nekpmpi 4 1
+cd -
