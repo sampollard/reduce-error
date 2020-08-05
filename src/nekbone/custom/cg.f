@@ -144,7 +144,7 @@ c$OMP&  fel,lel,rtz2,beta,alpha,alphm,rlim2,rtr0)
 
 c$OMP END PARALLEL
 
-    6    format('cg:',i4,1p4e17.10)
+    6    format('cg:',i4,1p4e28.20)
 
       if (nid.eq.0) then
         write(6,6) 0,sqrt(rnorminit)

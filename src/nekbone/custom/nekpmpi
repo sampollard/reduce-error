@@ -1,9 +1,11 @@
 #!/bin/sh
-if [ "$#" -ne 1 ]; then
-	echo "usage: ./nekpmpi <number of processors>
+# This is best used inside another script; see run-nek.sh
+if [ "$#" -ne 3 ]; then
+	echo "usage: ./nekpmpi <topology> <number of processors> <experiment>"
 	exit 1
 fi
-smpirun -hostfile ../../../../topologies/hostfile-fattree-16.txt \
-	-platform ../../../../topologies/fattree-16.xml \
+smpirun -hostfile "../../../../topologies/hostfile-$1.txt" \
+	-platform "../../../../topologies/$1.xml" \
 	--cfg=smpi/host-speed:90000000000f \
-	-np $2 ./nekbone 1 > "log-fattree-16-$2.txt"
+	-np $2 ./nekbone 1 > "../../experiments/log-$1-np$2-$3.txt"
+
