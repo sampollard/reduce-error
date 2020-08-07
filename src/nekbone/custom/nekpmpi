@@ -14,4 +14,4 @@ echo "smpirun -hostfile ../../../../topologies/hostfile-$1.txt \
 	-platform ../../../../topologies/$1.xml \
 	--cfg=smpi/host-speed:90Gf \
 	--cfg=smpi/allreduce:$3 \
-	-np $2 ./nekbone ex1 $2" >> "experiments/log-$1-np$2-$3-$4.txt"
+	-np $2 ./nekbone ex1 $2" >> "../../experiments/log-$1-np$2-$3-$4.txt"
