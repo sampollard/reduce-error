@@ -1,11 +1,17 @@
-#!/bin/sh
-# This is best used inside another script; see run-nek.sh
-if [ "$#" -ne 3 ]; then
-	echo "usage: ./nekpmpi <topology> <number of processors> <experiment>"
+#!/bin/bash
+# NOTA BENE: Use run-nek.sh instead of this directly; it keeps track of
+#     filenames and ensuring the correct SIZE and data.rea are used.
+if [ "$#" -ne 4 ]; then
+	echo "usage: ./nekpmpi <topology> <number of processors> <allreduce-algo> <trial>"
 	exit 1
 fi
 smpirun -hostfile "../../../../topologies/hostfile-$1.txt" \
 	-platform "../../../../topologies/$1.xml" \
-	--cfg=smpi/host-speed:90000000000f \
-	-np $2 ./nekbone 1 > "../../experiments/log-$1-np$2-$3.txt"
-
+	--cfg=smpi/host-speed:90Gf \
+	--cfg=smpi/allreduce:$3 \
+	-np $2 ./nekbone ex1 $2 > "../../experiments/log-$1-np$2-$3-$4.txt"
+echo "smpirun -hostfile ../../../../topologies/hostfile-$1.txt \
+	-platform ../../../../topologies/$1.xml \
+	--cfg=smpi/host-speed:90Gf \
+	--cfg=smpi/allreduce:$3 \
+	-np $2 ./nekbone ex1 $2" >> "experiments/log-$1-np$2-$3-$4.txt"
