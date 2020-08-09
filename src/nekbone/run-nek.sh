@@ -17,11 +17,11 @@ LELT=9216 # 72 * 128
 
 NUM_TRIALS=50
 NP_COUNT="16 72"
+ALLREDUCE_ALGOS="default ompi mpich mvapich2 impi rab1 rab2 rab_rsag rdb smp_binomial smp_binomial_pipeline smp_rdb smp_rsag smp_rsag_lr smp_rsag_rab redbcast ompi_ring_segmented mvapich2_rs mvapich2_two_level rab"
 # Algorithms that don't work in this case (and thus change to default):
 # lr automatic
-ALLREDUCE_ALGOS="default ompi mpich mvapich2 impi rab1 rab2 rab_rsag rdb smp_binomial smp_binomial_pipeline smp_rdb smp_rsag smp_rsag_lr smp_rsag_rab redbcast ompi_ring_segmented mvapich2_rs mvapich2_two_level rab"
 
-# Some necessary janitorial code
+# Some necessary janitorial code. SIZE contains compile-time constants
 TRIAL_FMT=$(seq --format='%03.0f' 1 $NUM_TRIALS)
 LELG=$(echo "$LP * $LELT" | bc)
 cp ../../custom/SIZE .
