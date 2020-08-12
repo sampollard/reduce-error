@@ -713,11 +713,41 @@ not shuffling. But that seems not doable in time.
 - `./makenek 1`
 - `./nekpmpi 1 4` : run nekbone on experiment 1 with 4 processors
 - Somehow, it worked! ha. Anyway, next need to edit to print higher precision
-- Change `cg.f` line 147 to `    6    format('cg:',i4,1p4e17.10)`
+- Change `cg.f` line 147 to `    6    format('cg:',i4,1p4e27.20)`
+- So it seems like the results are the same for each run :( Maybe try different
+  simgrid algos?
+- Should try slightly updated version https://asc.llnl.gov/coral-2-benchmarks/
+- Huge annoyance - the code was absolutely refusing to run anything other than
+  512 elements/process. Turns out the solution was to change not `SIZE` but
+  `data.rea`. Sigh.
+- Okay, so the cryptic `iel0,ielN,ielD` is element 'start, stop, by" for a `DO`
+  loop. What this means is you run the experiment OVER AND OVER if you don't
+  put, e.g., `128 128 1  = iel0,ielN,ielD` (because if you do `128 256 1` then it
+  will run 128 times using different counts of elements. I think.
 
+### Nekbone 3.1: Revolutions
+- Do [this one](https://github.com/Nek5000/Nekbone) instead. It also has a much
+  better user guide pdf
+- [Here](https://asc.llnl.gov/coral-2-benchmarks/downloads/Nekbone_Summary_2_3_6.pdf)
+  is an older pdf, might be useful but right now stick with the one in the
+  github repo.
+- `git clone git@github.com:Nek5000/Nekbone.git`
+- The numbering scheme is confusing. Nekbone 3.1 corresponds to v0.17 on Github.
+
+## Simgrid (again)
+### Toplogies
+Looking [here](https://simgrid.org/doc/latest/Tutorial_MPI_Applications.html)
+Supposing I want to add a dragonfly example:
+`topo_parameters=#groups;#chassis;#routers;#nodes` - see dragonfly-72.xml
+I can go up to 288 with my examples, easily. Would be nice to add bigger process counts,
+but oh well.
+
+### Allreduce algorithms
+With `smp_rsag_lr`, there is an error that says `MPI_allreduce_lr use default MPI_allreduce`
+which happens when `rcount < size` (I think rcount is receiver count) (when
+communication size is smaller than number of process).
 
 ## Next steps
-
 1. ✓ Do runiform[-1,1]
 2. (low priority) Kahan Summation
 3. (low priority) Repro BLAS (at least cite)
@@ -726,9 +756,9 @@ not shuffling. But that seems not doable in time.
   Pseudo-random Floating-Point Values, Allen B. Downey)  maybe even implement
   it.  Weird, this one's from
   [Computational Science](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7302591/)
-5. Different topologies
+5. ✓ Different topologies
 6. ✓ Cite https://oeis.org/A001147
-7. Multiple histograms
+7. ✓ Multiple histograms
 8. ✓ Make the "nearly identical" plot so it looks uniform
 9. Investigate the following: Is there a fundamental tradeoff between the
   height of the reduction tree and the error? e.g. left-associative is the
