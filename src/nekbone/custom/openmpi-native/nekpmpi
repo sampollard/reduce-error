@@ -1,0 +1,17 @@
+#!/bin/bash
+
+LP=288
+LELT=9216 # 72 * 128
+LELG=$(echo "$LP * $LELT" | bc)
+NUM_TRIALS=1000
+TRIAL_FMT=$(seq --format='%04.0f' 1 $NUM_TRIALS)
+NP_COUNT="36"
+for NP in $NP_COUNT; do
+	IEL0=$(echo "$LELT / $NP" | bc)
+	IELN=$(echo "$IEL0 * 2 + 1" | bc)
+	sed "s/400 400 1 = iel0,ielN/$IEL0 $IELN $IEL0 = iel0,ielN/g" data.rea.orig > data.rea
+	for TRIAL in $TRIAL_FMT; do
+		mpirun -np $NP ./nekbone ex1 $NP > logs/log-np$NP-$TRIAL.txt
+	done
+done
+
