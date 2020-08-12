@@ -2,9 +2,9 @@
 <!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
 <platform version="4.1">
   <zone id="world" routing="Full">
-    <cluster id="torus-2-2-4-cluster"
-      topology="TORUS" topo_parameters="2,2,4"
-      prefix="node-" radical="0-15" suffix=".hpcl.cs.uoregon.edu"
+    <cluster id="torus-4-8-9-cluster"
+      topology="TORUS" topo_parameters="4,8,9"
+      prefix="node-" radical="0-287" suffix=".hpcl.cs.uoregon.edu"
       speed="24Gf" bw="1GBps" lat="5us"
       loopback_bw="4GBps" loopback_lat="0"
     />

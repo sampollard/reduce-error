@@ -6,11 +6,11 @@
 <!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
 <platform version="4.1">
   <zone id="world" routing="Full">
-    <cluster id="dragonfly-72-cluster"
+    <cluster id="dragonfly-3-3-4-2-cluster"
       topology="DRAGONFLY" topo_parameters="3,4;3,2;4,1;2"
       prefix="node-" radical="0-71" suffix=".hpcl.cs.uoregon.edu"
-      speed="1Gf" bw="125MBps" lat="50us" 
-      loopback_bw="100MBps" loopback_lat="0"
+      speed="24Gf" bw="1GBps" lat="5us"
+      loopback_bw="4GBps" loopback_lat="0"
     />
   </zone>
 </platform>

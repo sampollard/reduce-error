@@ -1,16 +1,1 @@
-node-0.hpcl.cs.uoregon.edu
-node-1.hpcl.cs.uoregon.edu
-node-2.hpcl.cs.uoregon.edu
-node-3.hpcl.cs.uoregon.edu
-node-4.hpcl.cs.uoregon.edu
-node-5.hpcl.cs.uoregon.edu
-node-6.hpcl.cs.uoregon.edu
-node-7.hpcl.cs.uoregon.edu
-node-8.hpcl.cs.uoregon.edu
-node-9.hpcl.cs.uoregon.edu
-node-10.hpcl.cs.uoregon.edu
-node-11.hpcl.cs.uoregon.edu
-node-12.hpcl.cs.uoregon.edu
-node-13.hpcl.cs.uoregon.edu
-node-14.hpcl.cs.uoregon.edu
-node-15.hpcl.cs.uoregon.edu
+hostfile-fattree-16.txt

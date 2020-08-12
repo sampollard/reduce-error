@@ -5,8 +5,8 @@
     <cluster id="fattree-16-cluster"
       topology="FAT_TREE" topo_parameters="2;4,4;1,2;1,2"
       prefix="node-" radical="0-15" suffix=".hpcl.cs.uoregon.edu"
-      speed="1Gf" bw="125MBps" lat="50us" 
-      loopback_bw="100MBps" loopback_lat="0"
+      speed="24Gf" bw="1GBps" lat="5us"
+      loopback_bw="4GBps" loopback_lat="0"
     />
   </zone>
 </platform>
