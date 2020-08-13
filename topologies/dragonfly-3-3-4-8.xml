@@ -1,0 +1,16 @@
+<!--
+	topo_parameters=#groups,#g-links;#chassis,#c-links;#routers,#r-links;#nodes
+	Total nodes = groups * chassis * routers * nodes
+-->
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
+<platform version="4.1">
+  <zone id="world" routing="Full">
+    <cluster id="dragonfly-3-3-4-8-cluster"
+      topology="DRAGONFLY" topo_parameters="3,4;3,2;4,1;8"
+      prefix="node-" radical="0-71" suffix=".hpcl.cs.uoregon.edu"
+      speed="24Gf" bw="1GBps" lat="5us"
+      loopback_bw="4GBps" loopback_lat="0"
+    />
+  </zone>
+</platform>
