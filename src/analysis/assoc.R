@@ -1,6 +1,5 @@
 # Associativity experiments for uniform distribution
 library(ggplot2)
-library(reshape2)
 library(Rmpfr)
 
 #####################################################################
@@ -10,6 +9,7 @@ DBL_MIN <- 2.22507385850720138309e-308 # Machine Epsilon
 FLT_MIN <- 1.17549435e-38
 height <- 3
 EPS <- 2^-53
+ffmt = "%.3e"
 # Color Mappings:
 # A modified https://colorbrewer2.org/#type=qualitative&scheme=Dark2
 # #               "orange"  "purple"  "cyan"    "magenta" "green"   "gold"    "brown"
@@ -86,14 +86,19 @@ rel_err_mpfr <- function(x, r) {
 # Geometric Mean
 geom_mean <- function(x) { exp(mean(log(x))) }
 
-# Analytical Error Bounds
-analytical_bound <- function(n, distr) {
+# Analytical Absolute Error Bounds
+analytical_abs_bound <- function(n, distr) {
 	s <- switch(distr,
 		"unif01"   = 1*n,
 		"unif11"   = 1*n,
 		"unif1000" = 1000*n,
-		"subn"     = 1*n)
+		"subn"     = 2*n)
 	return(EPS*(n-1)*s + EPS^2)
+}
+
+# Only applies for positive numbers
+robertazzi_bound <- function(mu, n) {
+	return((1/3) * (mu/2)^2 * n^3 * EPS^2 * (1/12))
 }
 
 #####################################################################
@@ -116,19 +121,21 @@ for (x in c("unif11", "unif1000", "subn")) {
 	rola <- allr[allr$order == "Shuffle l assoc",]
 	rora <- allr[allr$order == "Shuffle rand assoc",]
 	cat(sprintf("*** %s ***\n",x))
-	cat(sprintf("min:\t%.20f\nmax:\t%.20f\ncanon:\t%.20f\nmpfr:\t%.20f\n",
+	cat(sprintf(paste0("min:\t",ffmt,"\nmax:\t",ffmt,"\ncanon:\t",ffmt,"\nmpfr:\t",ffmt,"\n"),
 		min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
-	cat(sprintf("analy:\t%.20f\n", analytical_bound(veclen, x)))
-	cat(sprintf("abs error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+	cat(sprintf(paste0("abs error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 		mean(abs(fora$error_mpfr)),
 		mean(abs(rola$error_mpfr)),
 		mean(abs(rora$error_mpfr))))
-	cat(sprintf("rel error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+	cat(sprintf(paste0("analy:\t",ffmt,"\n"), analytical_abs_bound(veclen, x)))
+	cat(sprintf(paste0("rel error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 		mean(rel_err(fora,mpfr_1000)),
 		mean(rel_err(rola,mpfr_1000)),
 		mean(rel_err(rora,mpfr_1000))))
+	cat(sprintf(paste0("sla:\t",ffmt,"\n"), abs((canonical-mpfr_1000)/mpfr_1000)))
+	cat(sprintf(paste0("analy:\t",ffmt,"\n"), abs(analytical_abs_bound(veclen, x)/mpfr_1000)))
 	# This is pretty slow
-	# cat(sprintf("rel error mpfr:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+	# cat(sprintf("rel error mpfr:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n",
 	# 	mean(rel_err_mpfr(fora,mpfr_1000_m)),
 	# 	mean(rel_err_mpfr(rola,mpfr_1000_m)),
 	# 	mean(rel_err_mpfr(rora,mpfr_1000_m))))
@@ -153,17 +160,19 @@ rola <- allr[allr$order == "Shuffle l assoc",]
 rora <- allr[allr$order == "Shuffle rand assoc",]
 
 cat(sprintf("*** %s ***\n", distr))
-cat(sprintf("min:\t%.20f\nmax:\t%.20f\ncanon:\t%.20f\nmpfr:\t%.20f\n",
+cat(sprintf(paste0("min:\t",ffmt,"\nmax:\t",ffmt,"\ncanon:\t",ffmt,"\nmpfr:\t",ffmt,"\n"),
 	min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
-cat(sprintf("analy:\t%.20f\n", analytical_bound(veclen, distr)))
-cat(sprintf("abs error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+cat(sprintf(paste0("abs error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 	mean(abs(fora$error_mpfr)),
 	mean(abs(rola$error_mpfr)),
 	mean(abs(rora$error_mpfr))))
-cat(sprintf("rel error:\nfora:\t%.20f\nrola:\t%.20f\nrora:\t%.20f\n",
+cat(sprintf(paste0("analy:\t",ffmt,"\n"), analytical_abs_bound(veclen, distr)))
+cat(sprintf(paste0("rel error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 	mean(rel_err(fora,mpfr_1000)),
 	mean(rel_err(rola,mpfr_1000)),
 	mean(rel_err(rora,mpfr_1000))))
+	cat(sprintf(paste0("sla:\t",ffmt,"\n"), abs((canonical-mpfr_1000)/mpfr_1000)))
+	cat(sprintf(paste0("analy:\t",ffmt,"\n"), abs(analytical_abs_bound(veclen, x)/mpfr_1000)))
 cat(sprintf("Unique:\nfora:\t%d\nrola:\t%d\nrora:\t%d\n",
 	length(unique(fora$error_mpfr)), length(unique(rola$error_mpfr)), length(unique(rora$error_mpfr))))
 cat(sprintf("Nonidentical (fora - rora): %d\n", length(intersect(fora$error_mpfr, rora$error_mpfr))))
@@ -349,15 +358,14 @@ l3 <- get_distribution_data(fn)
 distr4 <- "subn"
 fn <- paste0("experiments/assoc-r",distr4,"-big.tsv")
 l4 <- get_distribution_data(fn)
-stopifnot(l1$veclen == l2$veclen && l2$veclen == l3$veclen)
+stopifnot(l1$veclen == l2$veclen, l2$veclen == l3$veclen)
 
 d1 <- l1$rora
 d2 <- l2$rora
 d3 <- l3$rora
 d4 <- l4$rora
 
-warning("fix this once unif[1,1] experiment re-completes")
-#stopifnot(nrow(d1) == nrow(d2) && nrow(d1) == nrow(d3) && nrow(d1) == nrow(d3) && nrow(d4) == nrow(d1))
+stopifnot(nrow(d1) == nrow(d2), nrow(d1) == nrow(d3), nrow(d1) == nrow(d4))
 vlines <- data.frame(
 	"Statistic" = sapply(list(distr1,distr2,distr3,distr4), function(s){paste0("bar('",s,"')")}),
 	"Value"     = sapply(list(d1,d2,d3,d4), function(x){mean(x$relative_error)}),
