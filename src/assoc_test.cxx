@@ -1,6 +1,6 @@
 /* Sum up some random arrays, print their result */
-#ifndef ASSOC_EST_CXX
-#define ASSOC_EST_CXX
+#ifndef ASSOC_TEST_CXX
+#define ASSOC_TEST_CXX
 
 #include <algorithm>
 #include <cstdio>
@@ -21,7 +21,6 @@
                "<distr> is the distribution to use. Choices are:\n"\
                "\trunif[0,1] runif[-1,1] runif[-1000,1000] rsubn\n")
 
-#define SEED 42
 #define FLOAT_T double
 
 /* Note: it would be more robust to use ACCUMULATOR().operator()(a,b) instead

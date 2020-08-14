@@ -12,7 +12,7 @@ HEADERS = rand.hxx mpi_op.hxx assoc.hxx
 ifeq ($(USE_MPI), 1)
 TARGETS = mpi_pi_reduce dotprod_mpi
 else
-TARGETS = assoc_test
+TARGETS = assoc_test gen_random
 endif
 
 # MPI and MPI Modular Component Architecture commands (OpenMPI)
@@ -71,6 +71,8 @@ else
 assoc_test : assoc_test.o rand.o assoc.o
 	mkdir -p experiments
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+gen_random : gen_random.o rand.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 endif
 
 # OpenMPI MPI_Reduce Algorithms
@@ -84,7 +86,7 @@ OMPI_ALGOS = 0 1 2 3 4 5 6 7
 # 6:"in-order_binary"
 # 7:"rabenseifner"
 
-.PHONY : quick sim ompi clean differ assoc
+.PHONY : quick sim ompi clean differ assoc assoc_quick assoc_big assoc_deep
 quick : $(TARGETS)
 	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-16.txt -platform $(TOPO_DIR)/fattree-16.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-16 auto
 	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-72.txt -platform $(TOPO_DIR)/fattree-72.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-72 auto
@@ -164,8 +166,10 @@ clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
 
 # Dependency lists
-rand.o :
+assoc.o : assoc.hxx
+assoc_test.o : assoc.hxx rand.hxx
+dotprod_mpi.o : rand.hxx assoc.hxx mpi_op.hxx
+gen_random.o : rand.hxx
 mpi_op.o : mpi_op.hxx
 mpi_pi_reduce.o : rand.hxx
-dotprod_mpi.o : rand.hxx assoc.hxx mpi_op.hxx
-assoc_test.o : assoc.hxx rand.hxx
+rand.o : rand.hxx

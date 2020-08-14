@@ -16,5 +16,9 @@
   outputs results in a tsv, with the exception of SimGrid diagnostics.
 - `make ompi` runs tests for different OpenMPI reduction algorithms
 - `USE_MPI=0 make assoc` runs many random associations (must have `USE_MPI = 0`)
-- NOTE: Do `make clean` before changing between MPI (the default) and non-mpi (`USE_MPI=0 make`)
+- `USE_MPI=0 make gen_random` generates many random numbers. Useful for
+  plotting a histogram of exotic distributions. Defaults to the `subn`
+  distribution. Then use, e.g., `./gen_random 50000 rsubn`
+- NOTE: Do `make clean` before changing between MPI (the default) and non-mpi
+  (`USE_MPI=0 make`)
 
