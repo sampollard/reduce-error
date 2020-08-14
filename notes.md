@@ -747,6 +747,9 @@ With `smp_rsag_lr`, there is an error that says `MPI_allreduce_lr use default MP
 which happens when `rcount < size` (I think rcount is receiver count) (when
 communication size is smaller than number of process).
 
+Also `allreduce-lr.cpp:41: [smpi_colls/WARNING] MPI_allreduce_lr use default MPI_allreduce.`
+
+
 ## Next steps
 1. ✓ Do runiform[-1,1]
 2. (low priority) Kahan Summation
@@ -763,4 +766,13 @@ communication size is smaller than number of process).
 9. Investigate the following: Is there a fundamental tradeoff between the
   height of the reduction tree and the error? e.g. left-associative is the
   most "unbalanced" in a sense - we also find the error is pretty high.
+10. Plot stuff from `dotprod.tsv`
+11. Run simgrid with the simple sum program for different allreduce algorithms
+
+## Paper writing
+### 8/12/20
+- Hypothesis that different simgrid reductions on nekbone will cause different
+  results is false. I don't know why. It seems to be more robust that I
+  expected.
+- Put averages in table for figs 3,4,5
 
