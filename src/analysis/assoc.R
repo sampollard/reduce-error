@@ -10,6 +10,7 @@ FLT_MIN <- 1.17549435e-38
 height <- 3
 EPS <- 2^-53
 ffmt = "%.3e"
+base_dir <- 'experiments/assoc/'
 # Color Mappings:
 # A modified https://colorbrewer2.org/#type=qualitative&scheme=Dark2
 # #               "orange"  "purple"  "cyan"    "magenta" "green"   "gold"    "brown"
@@ -106,7 +107,7 @@ robertazzi_bound <- function(mu, n) {
 #####################################################################
 
 for (x in c("unif11", "unif1000", "subn")) {
-	fn <- paste0("experiments/assoc-r",x,"-big.tsv")
+	fn <- paste0(base_dir,"assoc-r",x,"-big.tsv")
 	df <- read_experiment(fn)
 	l <- read_mpfr(fn)
 	veclen <- l[[1]]
@@ -149,7 +150,7 @@ for (x in c("unif11", "unif1000", "subn")) {
 
 # unif(0,1) is separate because we focus on this one a lot
 distr <- "unif01"
-df <- read_experiment(paste0("experiments/assoc-r",distr,".tsv"))
+df <- read_experiment(paste0(base_dir,"assoc-r",distr,".tsv"))
 canonical <- df$fp_decimal[df$order == "Left assoc"]
 mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
 allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
@@ -347,16 +348,16 @@ get_distribution_data <- function(fn) {
 	))
 }
 distr1 <- "unif01"
-fn <- paste0("experiments/assoc-r",distr1,"-big.tsv")
+fn <- paste0(base_dir,"assoc-r",distr1,"-big.tsv")
 l1 <- get_distribution_data(fn)
 distr2 <- "unif11"
-fn <- paste0("experiments/assoc-r",distr2,"-big.tsv")
+fn <- paste0(base_dir,"assoc-r",distr2,"-big.tsv")
 l2 <- get_distribution_data(fn)
 distr3 <- "unif1000"
-fn <- paste0("experiments/assoc-r",distr3,"-big.tsv")
+fn <- paste0(base_dir,"assoc-r",distr3,"-big.tsv")
 l3 <- get_distribution_data(fn)
 distr4 <- "subn"
-fn <- paste0("experiments/assoc-r",distr4,"-big.tsv")
+fn <- paste0(base_dir,"assoc-r",distr4,"-big.tsv")
 l4 <- get_distribution_data(fn)
 stopifnot(l1$veclen == l2$veclen, l2$veclen == l3$veclen)
 
