@@ -1,17 +1,33 @@
 #!/bin/bash
 
+# OpenMPI Allreduce Algorithms
+# Get with ompi_info --parseable --all | grep allreduce_algorithm
+#0:ignore
+#1:basic_linear
+#2:nonoverlapping
+#3:recursive_doubling
+#4:ring
+#5:segmented_ring
+#6:rabenseifner
+
 LP=288
 LELT=9216 # 72 * 128
 LELG=$(echo "$LP * $LELT" | bc)
-NUM_TRIALS=1000
+LOG_DIR=logs/allr
+NUM_TRIALS=20
 TRIAL_FMT=$(seq --format='%04.0f' 1 $NUM_TRIALS)
 NP_COUNT="36"
+OMPI_ALGOS="0 1 2 3 4 5 6"
+
+mkdir -p "$LOG_DIR"
 for NP in $NP_COUNT; do
 	IEL0=$(echo "$LELT / $NP" | bc)
 	IELN=$(echo "$IEL0 * 2 + 1" | bc)
 	sed "s/400 400 1 = iel0,ielN/$IEL0 $IELN $IEL0 = iel0,ielN/g" data.rea.orig > data.rea
-	for TRIAL in $TRIAL_FMT; do
-		mpirun -np $NP ./nekbone ex1 $NP > logs/log-np$NP-$TRIAL.txt
+	for ALGO in $OMPI_ALGOS; do
+		for TRIAL in $TRIAL_FMT; do
+			mpirun -np $NP --mca coll_tuned_reduce_algorithm $ALGO ./nekbone ex1 $NP > $LOG_DIR/log-np$NP-a$ALGO-$TRIAL.txt
+		done
 	done
 done
 
