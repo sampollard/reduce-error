@@ -21,8 +21,8 @@
     `cd src/analysis && Rscript assoc.R`
   * `-j` will run 4 experiments independently
 - `USE_MPI=0 make gen_random` generates many random numbers. Useful for
-  plotting a histogram of exotic distributions. Defaults to the `subn`
-  distribution. Then use, e.g., `./gen_random 50000 rsubn`
+  plotting a histogram of exotic distributions. Then use, e.g.,
+  `./gen_random 50000 rsubn`
 - NOTE: Do `make clean` before changing between MPI (the default) and non-mpi
   (`USE_MPI=0 make`)
 

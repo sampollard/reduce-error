@@ -1,0 +1,29 @@
+# NOTA BENE: Use run-nek.sh so all the configuration files get edited
+# correctly. Experiments should be run per-processor count.
+# Usage:
+#    cd test/example1
+#    make -j -f ../../exp-Makefile TRIAL=<N> np-16
+TRIAL ?= 000
+ALLREDUCE ?= default
+
+nekbone: SIZE
+	./makenek
+
+.PHONY: np-16 np-72
+np-16: fattree-16 torus-2-2-4
+np-72: fattree-72 torus-2-4-9
+
+.PHONY: torus-2-2-4 torus-2-4-9 fattree-16 fattree-72
+torus-2-2-4: nekbone
+	./nekpmpi $@ 16 $(ALLREDUCE) $(TRIAL)
+torus-2-4-9: nekbone
+	./nekpmpi $@ 72 $(ALLREDUCE) $(TRIAL)
+fattree-16: nekbone
+	./nekpmpi $@ 16 $(ALLREDUCE) $(TRIAL)
+fattree-72: nekbone
+	./nekpmpi $@ 72 $(ALLREDUCE) $(TRIAL)
+
+.PHONY: clean
+clean:
+	./makenek clean
+	$(RM) smpitmp-app*
