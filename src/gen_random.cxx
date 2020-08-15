@@ -39,8 +39,8 @@ int main (int argc, char* argv[])
 		fprintf(stderr, "Unrecognized distribution:\n%s",USAGE);
 		return 1;
 	}
-	set_seed(SEED, 0);
-	srand(SEED);
+	set_seed(ASSOC_SEED, 0);
+	srand(ASSOC_SEED);
 
 	printf("%s\n",dist.c_str());
 	for (i = 0; i < len; i++) {

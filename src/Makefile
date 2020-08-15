@@ -7,20 +7,16 @@ USE_MPI ?= 1
 MPICXX = smpicxx
 #MPICXX = mpicxx
 
-EXTRA_SOURCES = rand.cxx mpi_op.cxx assoc.cxx
-HEADERS = rand.hxx mpi_op.hxx assoc.hxx
+EXTRA_SOURCES = assoc.cxx mpi_op.cxx rand.cxx
+HEADERS = assoc.hxx mpi_op.hxx rand.hxx util.hxx
 ifeq ($(USE_MPI), 1)
 TARGETS = mpi_pi_reduce dotprod_mpi
 else
 TARGETS = assoc_test gen_random
 endif
 
-# MPI and MPI Modular Component Architecture commands (OpenMPI)
-NUM_PROCS_LOCAL = 16 # For running on the system MPI; simgrid runs use other process counts
-VERBOSITY = coll_base_verbose 0
-#VERBOSITY = coll_base_verbose 40
-
-# Sizes
+# Experiment Parameters
+EXP_DIR = experiments/with-height
 VECLEN = 14400
 VECLEN_BIG = 72000000
 RAND_TRIALS = 50000
@@ -44,6 +40,11 @@ LDFLAGS += -L$${HOME}/.local/simgrid/lib -Wl,-rpath=$${HOME}/.local/simgrid/lib
 LIBS += -lmpfr -lgmp
 
 CXXFLAGS += -Wall -g
+
+# MPI and MPI Modular Component Architecture commands (OpenMPI). Currently Unused
+NUM_PROCS_LOCAL = 16 # For running on the system MPI; simgrid runs use other process counts
+VERBOSITY = coll_base_verbose 0
+#VERBOSITY = coll_base_verbose 40
 
 # Shouldn't need to change
 OBJECTS = $(EXTRA_SOURCES:.cxx=.o)
@@ -69,7 +70,7 @@ dotprod_mpi : $(OBJECTS) rand.o mpi_op.o dotprod_mpi.o
 else 
 # Non-MPI targets
 assoc_test : assoc_test.o rand.o assoc.o
-	mkdir -p experiments
+	mkdir -p $(EXP_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 gen_random : gen_random.o rand.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
@@ -134,40 +135,40 @@ assoc_quick : assoc_test
 
 assoc : assoc_test assoc01 assoc11 assoc1000 assocrsubn
 assoc01: assoc_test
-	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[0,1]        > experiments/assoc-runif01.tsv
+	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[0,1]        > $(EXP_DIR)/assoc-runif01.tsv
 assoc11: assoc_test
-	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[-1,1]       > experiments/assoc-runif11.tsv
+	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[-1,1]       > $(EXP_DIR)/assoc-runif11.tsv
 assoc1000: assoc_test
-	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[-1000,1000] > experiments/assoc-runif1000.tsv
+	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[-1000,1000] > $(EXP_DIR)/assoc-runif1000.tsv
 assocrsubn: assoc_test
-	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) rsubn             > experiments/assoc-rsubn.tsv
+	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) rsubn             > $(EXP_DIR)/assoc-rsubn.tsv
 
 assoc_big : assoc_test assoc01_big assoc11_big assoc1000_big assocrsubn_big
 assoc01_big: assoc_test
-	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[0,1]        > experiments/assoc-runif01-big.tsv
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[0,1]        > $(EXP_DIR)/assoc-runif01-big.tsv
 assoc11_big: assoc_test
-	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[-1,1]       > experiments/assoc-runif11-big.tsv
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[-1,1]       > $(EXP_DIR)/assoc-runif11-big.tsv
 assoc1000_big: assoc_test
-	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[-1000,1000] > experiments/assoc-runif1000-big.tsv
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[-1000,1000] > $(EXP_DIR)/assoc-runif1000-big.tsv
 assocrsubn_big: assoc_test
-	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) rsubn             > experiments/assoc-rsubn-big.tsv
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) rsubn             > $(EXP_DIR)/assoc-rsubn-big.tsv
 
 assoc_deep : assoc_test assoc01_deep assoc11_deep assoc1000_deep assocrsubn_deep
 assoc01_deep: assoc_test
-	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) runif[0,1]        > experiments/assoc-runif01-deep.tsv
+	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) runif[0,1]        > $(EXP_DIR)/assoc-runif01-deep.tsv
 assoc11_deep: assoc_test
-	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) runif[-1,1]       > experiments/assoc-runif11-deep.tsv
+	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) runif[-1,1]       > $(EXP_DIR)/assoc-runif11-deep.tsv
 assoc1000_deep: assoc_test
-	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) runif[-1000,1000] > experiments/assoc-runif1000-deep.tsv
+	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) runif[-1000,1000] > $(EXP_DIR)/assoc-runif1000-deep.tsv
 assocrsubn_deep: assoc_test
-	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) rsubn             > experiments/assoc-rsubn-deep.tsv
+	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) rsubn             > $(EXP_DIR)/assoc-rsubn-deep.tsv
 
 clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
 
 # Dependency lists
 assoc.o : assoc.hxx
-assoc_test.o : assoc.hxx rand.hxx
+assoc_test.o : assoc.hxx rand.hxx util.hxx
 dotprod_mpi.o : rand.hxx assoc.hxx mpi_op.hxx
 gen_random.o : rand.hxx
 mpi_op.o : mpi_op.hxx

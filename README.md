@@ -15,7 +15,11 @@
 - `make sim` runs tests for different simgrid reduction algorithms. This
   outputs results in a tsv, with the exception of SimGrid diagnostics.
 - `make ompi` runs tests for different OpenMPI reduction algorithms
-- `USE_MPI=0 make assoc` runs many random associations (must have `USE_MPI = 0`)
+- `USE_MPI=0 make -j assoc` runs many random associations (must have `USE_MPI = 0`)
+  * The output of this can be passed into R to generate plots; put the output
+    into a directory, `src/analysis/experiments/assoc` then
+    `cd src/analysis && Rscript assoc.R`
+  * `-j` will run 4 experiments independently
 - `USE_MPI=0 make gen_random` generates many random numbers. Useful for
   plotting a histogram of exotic distributions. Defaults to the `subn`
   distribution. Then use, e.g., `./gen_random 50000 rsubn`

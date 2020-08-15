@@ -30,6 +30,7 @@ class random_reduction_tree {
 		random_reduction_tree();   // Empty constructor
 		random_reduction_tree(int k, long n, FLOAT_T* A);  // Construct and randomize
 		~random_reduction_tree(); // Destructor
+		int height();             // Height of the tree
 		FLOAT_T sum_tree();       // Add all leaves. Sum is at the root.
 		FLOAT_T multiply_tree();  // Multiply all leaves. Product is at the root.
 	private:

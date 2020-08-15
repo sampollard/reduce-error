@@ -1,7 +1,7 @@
 #ifndef RAND_HXX
 #define RAND_HXX
 
-#define SEED 42
+#define ASSOC_SEED 42
 
 /* See rand.cxx for license */
 void set_seed(unsigned int i1, unsigned int i2);

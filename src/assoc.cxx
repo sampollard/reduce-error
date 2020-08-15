@@ -39,6 +39,21 @@ random_reduction_tree<FLOAT_T, ALLOC>::random_reduction_tree(int k, long n, FLOA
 }
 
 template <class FLOAT_T, class ALLOC>
+int random_reduction_tree<FLOAT_T, ALLOC>::height()
+{
+	typename tree<FLOAT_T, ALLOC>::leaf_iterator i;
+	int h = 0;
+	int c;
+	for (i = t_.begin_leaf(); i != t_.end_leaf(); i++) {
+		c = t_.depth(i);
+		if (c > h) {
+			h = c;
+		}
+	}
+	return h;
+}
+
+template <class FLOAT_T, class ALLOC>
 FLOAT_T random_reduction_tree<FLOAT_T, ALLOC>::sum_tree()
 {
 	eval_tree_sum(t_.begin());
