@@ -14,9 +14,9 @@ LP=288
 LELT=9216 # 72 * 128
 LELG=$(echo "$LP * $LELT" | bc)
 LOG_DIR=logs/allr
-NUM_TRIALS=20
+NUM_TRIALS=100
 TRIAL_FMT=$(seq --format='%04.0f' 1 $NUM_TRIALS)
-NP_COUNT="36"
+NP_COUNT="16 36"
 OMPI_ALGOS="0 1 2 3 4 5 6"
 
 mkdir -p "$LOG_DIR"
