@@ -10,16 +10,22 @@ canon <- list(
 	max_residual = 1.0,
 	fill_color = viridis(5)[4])
 
-# Some terminology: nb = neckbone
-# f = filtered, t = topology, s = summarized and subsetted, u = unique trials
-fn <- paste0('experiments/nekbone.tsv')
-nb <- na.omit(read.table(fn, header = TRUE, fill=TRUE))
-
 topo_fmt <- function(x) {
 	switch(x,
 		"fattree-72"   = "72-node Fat Tree Cluster",
 		"unknown topology, check topo_fmt")
 }
+
+# Return the smallest double-precision number greater than x (nextafter in C/C++)
+# Works for all positive, non-subnormal x
+next_dbl <- function(x) {
+	x / (1 - .Machine$double.neg.eps)
+}
+
+# Some terminology: nb = neckbone
+# f = filtered, t = topology, s = summarized and subsetted, u = unique trials
+fn <- paste0('experiments/nekbone.tsv')
+nb <- na.omit(read.table(fn, header = TRUE, fill=TRUE))
 
 # Filter by where the residuals differ (across different trials) We filter out
 # the ones that didn't converge and smp_rsag_lr, which seems to do the wrong
@@ -39,7 +45,8 @@ nbt_topo <- "fattree-72"
 nbt <- nbf %>%
 	filter(algo != "smp_rsag") %>%
 	filter(topology == nbt_topo)
-nbt$difference <- nbt$cg_residual - min(nbt$cg_residual)
+min_res_nbt <- min(nbt$cg_residual)
+nbt$difference <- nbt$cg_residual - min_res_nbt
 # Get the number of trials. To be conservative, count the minimum for
 # each experiment, where an experiment is each triple of (NP, topology, algo)
 min_trials <- nbt %>%
@@ -60,11 +67,27 @@ p <- ggplot(nbt, aes(x = algo, y = difference, group = difference)) +
 	geom_bar(stat = "identity", color = "black", position = "dodge", fill = canon$fill_color) +
 	geom_text(aes(label = count), position = position_dodge(0.9), vjust = -0.7, size = 3) +
 	theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
-	ylim(NA, max(nbt$difference * 1.1)) +
+	ylim(0, max(nbt$difference * 1.5)) +
 	labs(title = paste("Unique Results for Nekbone on a", topo_fmt(nbt_topo))) +
+	scale_y_continuous(
+		labels = function(x) sprintf("%0.2e", x),
+		breaks = seq(min(nbt$difference), max(nbt$difference), length.out = 6)) +
 	xlab("Allreduce Algorithm") +
 	ylab("Difference from Smallest Residual")
-ggsave(paste0("figures/nekbone-trials.pdf"), plot = p, height = 3.5)
+# Add in a scale for machine epsilon. This feels a little hacky.
+left_edge <- ggplot_build(p)$layout$panel_params[[1]]$x.range[1]
+top_edge <- ggplot_build(p)$layout$panel_params[[1]]$y.range[2]
+p <- p + geom_segment(
+	aes(x    = left_edge*1.4,
+	    xend = left_edge*1.4,
+	    y    = top_edge*0.9,
+	    yend = top_edge*0.9 + min_res_nbt - next_dbl(min_res_nbt)),
+	size = 1) +
+	geom_text(aes(x = left_edge*1.4,
+	              y = top_edge*0.9 + 0.5 * (min_res_nbt - next_dbl(min_res_nbt)),
+	              label = "= machine eps"),
+	          size = 3, vjust = 0, hjust = "left", nudge_x = 0.1)
+ggsave(paste0("figures/nekbone-trials.pdf"), plot = p, height = 5.5)
 
 # These are nice to have, but too verbose for the figure.
 cat(paste("minimum trials =", min_trials, "\n"))
@@ -77,6 +100,9 @@ nbu <- nbf %>%
 	group_by(elements, NP, topology, algo, cg_residual) %>%
 	tally(name = "count")
 
+#####################################################################
+###              Those Weird Subset Plots I Made                  ###
+#####################################################################
 # This plot is not as useful because so many of the bars are exactly the same -
 # Maybe if simgrid + nekbone resulted in different runs more often this would
 # be the better plot, but alas. Look to the second one.
@@ -102,6 +128,5 @@ p <- ggplot(nbs, aes(y = cg_residual, fill = topology, x = algos_index)) +
 	labs(title = "Nekbone with Simgrid Allreduce Algorithms",
 		caption = paste("elements =", format(canon$elements,big.mark=","))) +
 	xlab("Subset of Allreduce Algorithms") +
-	
 ggsave(paste0("figures/nekbone-subset.pdf"), plot = p, height = 3.5)
 
