@@ -43,9 +43,11 @@ cat <<EndOfTransmission > nekbone-batch.sh
 #SBATCH --cpus-per-task="$CPUS_PER_TASK"
 
 TRIAL_FMT=\$(seq -f '%04.0f' 1 $NUM_TRIALS)
-for \$TRIAL in \$TRIAL_FMT; do
+for TRIAL in \$TRIAL_FMT; do
 	mpirun -np $NODES ./nekbone ex1 $NODES > $LOG_DIR/log-np$NP-\$TRIAL.txt
 done
 EndOfTransmission
 
-echo sbatch nekbone-batch.sh
+echo "nekbone-batch.sh created. Now run"
+echo "sbatch nekbone-batch.sh"
+
