@@ -776,3 +776,6 @@ Also `allreduce-lr.cpp:41: [smpi_colls/WARNING] MPI_allreduce_lr use default MPI
   expected.
 - Put averages in table for figs 3,4,5
 
+### 8/16/20
+Talapas is a pain. You have to load the modules in sbatch if you didn't load
+them in the interactive shell.

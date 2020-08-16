@@ -7,7 +7,7 @@ TSV=experiments/nekbone.tsv
 echo -e "elements\tNP\ttopology\talgo\ttrial\tcg_residual" > "$TSV"
 echo -n "Writing to $TSV... "
 
-# OpenMPI
+# OpenMPI Native (single-node)
 DIR="experiments/openmpi"
 for NP in 16 36; do
 	PREFIX="log-np$NP-"
@@ -20,6 +20,22 @@ for NP in 16 36; do
 			 /nelt/ && e==0 {e=$NF}
 			 END {printf "%s\t%s\t%s\t%s\t%s\t%s\n", e, np, topo, a, t, r}' "$f" >> "$TSV"
 	done
+done
+
+# Running on a cluster
+DIR="experiments/cluster"
+PREFIX="log-"
+for f in $DIR/$PREFIX*.txt; do
+	fb=$(basename $f)
+	NP=$(echo $fb    | sed -E 's/log-np([0-9]+)-a([0-9]+)-([0-9]+)\.txt/\1/g')
+	ALGO=$(echo $fb  | sed -E 's/log-np([0-9]+)-a([0-9]+)-([0-9]+)\.txt/\2/g')
+	TRIAL=$(echo $fb | sed -E 's/log-np([0-9]+)-a([0-9]+)-([0-9]+)\.txt/\3/g')
+	TOPO=talapas-$NP
+	# the cg lines have the format cg: iter rnorm alpha beta pap
+	awk -v t=$TRIAL -v a="allreduce$ALGO" -v np=$NP -v topo="$TOPO" \
+		'/cg:/ && ++n == 2 {r=$3}
+		 /nelt/ && e==0 {e=$NF}
+		 END {printf "%s\t%s\t%s\t%s\t%s\t%s\n", e, np, topo, a, t, r}' "$f" >> "$TSV"
 done
 
 # Simgrid

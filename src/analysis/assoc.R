@@ -90,8 +90,8 @@ rel_err_mpfr <- function(x, r) {
 geom_mean <- function(x) { exp(mean(log(x))) }
 
 # Analytical Absolute Error Bounds
-analytical_abs_bound <- function(n, distr) {
-	s <- switch(distr,
+analytical_abs_bound <- function(n, d) {
+	s <- switch(d,
 		"unif01"   = 1*n,
 		"unif11"   = 1*n,
 		"unif1000" = 1000*n,
@@ -150,8 +150,12 @@ for (x in c("unif11", "unif1000", "subn")) {
 		length(intersect(fora$error_mpfr, rora$error_mpfr))))
 }
 
-# unif(0,1) is separate because we focus on this one a lot
-distr <- "unif01"
+# unif(0,1) is separate because we focus on this one a lot.
+# It would be nice if this worked in a loop, but I think the .(dist_expr part
+# of bquote is messing things up.  I tried "force" but that didn't seem to
+# work. Maybe look into substitute instead?
+distr <- 'unif01'
+message("Running batch of plots with ", distr)
 df <- read_experiment(paste0(base_dir,"assoc-r",distr,".tsv"))
 canonical <- df$fp_a[df$order == "Left assoc"]
 mpfr_1000 <- df$fp_a[df$order == "MPFR(3324) left assoc"]
@@ -188,7 +192,8 @@ max_diff <- max(allr$error_mpfr)
 
 # Make some scatterplots. Not particularly useful (also huge pdf files!) so
 # they're commented out
-for (x in c()) { # c("fora", "rola", "rora", "allr")) {
+# c("fora", "rola", "rora", "allr"))
+for (x in c()) {
 	cdf <- get(x)
 	cdf <- na.omit(cdf)
 	p <- ggplot(cdf) +
@@ -218,7 +223,7 @@ p <- ggplot(rora, aes(x = error_mpfr)) +
 	theme(legend.position = c(0.8, 0.9), legend.direction="horizontal") +
 	labs(title = "Shuffling and Random Associativity",
 		caption = paste0("n = ", format(nrow(rora),big.mark=","),
-		                 "\n|A| = ", format(veclen, big.mark=","))) +
+						 "\n|A| = ", format(veclen, big.mark=","))) +
 	ylab("Count") +
 	xlab(expression(sum[mpfr] - sum[double]))
 ggsave(paste0("figures/assoc-r",distr,"-hist-rora.pdf"), plot = p, height = height)
@@ -258,7 +263,7 @@ p <- ggplot(rbind(rola,rora), aes(x = error_mpfr, fill = order)) +
 	labs(title = "Random Associativity With and Without Random Ordering",
 		caption = bquote(n == .(format(nrow(rola),big.mark=","))*"," ~~~
 						 "|A|" == .(format(veclen, big.mark=","))*"," ~~~
-		                 .(distr_expr(distr)))) +
+						 .(distr_expr(distr)))) +
 	theme(legend.title = element_blank(),
 		legend.position = "top",
 		legend.direction = "horizontal",
@@ -277,7 +282,7 @@ vlines <- data.frame(
 vlines$Statistic <- factor(
 	vlines$Statistic, levels = vlines$Statistic, ordered = TRUE)
 Labels <- to_expr(vlines$Statistic)
-binc <- count_bins(list(rbind(fora,rora)))
+binc <- count_bins(list(fora,rora))
 p <- ggplot(rbind(fora,rora), aes(x = abs(error_mpfr))) +
 	# Histogram info and legnd
 	geom_histogram(bins = binc, aes(fill = order),
@@ -301,7 +306,7 @@ p <- ggplot(rbind(fora,rora), aes(x = abs(error_mpfr))) +
 	labs(title = "Random Associativity With and Without Random Ordering",
 		caption = bquote(n == .(format(nrow(rola),big.mark=","))*"," ~~~
 						 "|A|" == .(format(veclen, big.mark=","))*"," ~~~
-		                 .(distr_expr(distr)))) +
+						 .(distr_expr(distr)))) +
 	ylab("Count") +
 	xlab(expression(paste("Error as |",sum[mpfr] - sum[double],"|")))
 ggsave(paste0("figures/assoc-r",distr,"-hist-fora-rora-abs.pdf"), plot = p, height = 3.5, width = 6)

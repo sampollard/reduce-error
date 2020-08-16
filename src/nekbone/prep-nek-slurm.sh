@@ -13,7 +13,7 @@ ERROR="$LOG_DIR/$JOB_NAME.err"  # file in which to store job stderr
 #
 #                             # Shouldn't need to change below this
 #
-TIME=10                       # wall-clock time limit, in minutes
+TIME=240                      # wall-clock time limit, in minutes
 MEM=32000                     # memory limit per node, in MB
 NTASKS_PER_NODE=1             # number of tasks to launch per node
 CPUS_PER_TASK=1               # number of cores for each task
@@ -56,6 +56,8 @@ cat <<EndOfTransmission > nekbone-batch.sh
 #SBATCH --ntasks-per-node="$NTASKS_PER_NODE"
 #SBATCH --cpus-per-task="$CPUS_PER_TASK"
 
+module load gcc/7.3
+module load openmpi
 TRIAL_FMT=\$(seq -f '%04.0f' 1 $NUM_TRIALS)
 $OMPI_OPT_START
 for TRIAL in \$TRIAL_FMT; do
