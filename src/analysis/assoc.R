@@ -46,12 +46,30 @@ to_expr <- function(x) {
 	bquote(.(parse(text=as.character(x))))
 }
 
+distr_pp <- function(x) {
+	switch(x,
+		"unif01"   = "U(0,1)",
+		"unif11"   = "U(-1,1)",
+		"unif1000" = "U(-1000,1000)",
+		"subn"     = "subn",
+		"unknown notation, check distr_pp")
+}
+
+simpl_distr_expr <- function(x) {
+	switch(x,
+		"unif01"   = quote(U(0,1)),
+		"unif11"   = quote(U(-1,1)),
+		"unif1000" = quote(U(-1000,1000)),
+		"subn"     = quote(subn(0,2)),
+		"unknown notation, check simpl_distr_expr")
+}
+
 distr_expr <- function(x) {
 	switch(x,
-		"unif01"   = quote(A[k] %~% unif(0,1)),
-		"unif11"   = quote(A[k] %~% unif(-1,1)),
-		"unif1000" = quote(A[k] %~% unif(-1000,1000)),
-		"subn"     = quote(A[k] %~% subn(0,1)),
+		"unif01"   = quote(A[k] %~% U(0,1)),
+		"unif11"   = quote(A[k] %~% U(-1,1)),
+		"unif1000" = quote(A[k] %~% U(-1000,1000)),
+		"subn"     = quote(A[k] %~% subn(0,2)),
 		"unknown notation, check distr_expr")
 }
 
@@ -375,7 +393,7 @@ d4 <- l4$rora
 
 stopifnot(nrow(d1) == nrow(d2), nrow(d1) == nrow(d3), nrow(d1) == nrow(d4))
 vlines <- data.frame(
-	"Statistic" = sapply(list(distr1,distr2,distr3,distr4), function(s){paste0("bar('",s,"')")}),
+	"Statistic" = sapply(list(distr1,distr2,distr3,distr4), function(s){paste0("bar('",distr_pp(s),"')")}),
 	"Value"     = sapply(list(d1,d2,d3,d4), function(x){mean(x$relative_error)}),
 	"Color"     = sapply(list(distr1,distr2,distr3,distr4), function(x){get(x, ra_col)}),
 	"Linetype"  = c("solid", "dashed", "dotdash", "dotted"),
@@ -389,6 +407,8 @@ vlines$Statistic <- factor(
 	vlines$Statistic, levels = vlines$Statistic, ordered = TRUE)
 hist_style$Statistic <- factor(
 	hist_style$Statistic, levels = hist_style$Statistic, ordered = TRUE)
+hist_style$StatisticExpr <- lapply(hist_style$Statistic,
+                                   function(x) simpl_distr_expr(as.character(x)))
 Labels <- to_expr(vlines$Statistic)
 binc <- count_bins(list(d1,d2,d3,d4), by = 'relative_error')
 binc <- 51
@@ -398,7 +418,7 @@ p <- ggplot(rbind(d1,d2,d3,d4), aes(x = relative_error)) +
         position = "identity", color = "black", alpha = 0.5) +
 	scale_fill_manual(name = "Histograms", guide = "legend",
 		values = hist_style$Fill,
-		labels = hist_style$Statistic) +
+		labels = hist_style$StatisticExpr) +
 	# Vlines
 	geom_vline(data = vlines, show.legend = TRUE,
 		aes(xintercept = Value, color = Statistic, linetype = Statistic)) +
@@ -407,13 +427,14 @@ p <- ggplot(rbind(d1,d2,d3,d4), aes(x = relative_error)) +
 	scale_color_manual(name = "Lines", values = vlines$Color,
 		labels = Labels) +
 	guides(fill = guide_legend(override.aes = list(linetype = 0))) +
-	labs(title = "RORA with Different Distributions",
+	labs(title = "Summation Error for Different Distributions",
 		caption = bquote(n == .(format(nrow(d1),big.mark=","))*"," ~~~
 						 "|A|" == .(format(l1$veclen, big.mark=",")))) +
 	theme(legend.title = element_blank(),
 		legend.position = "top",
 		legend.direction = "horizontal",
-		legend.box = "horizontal") +
+		legend.box = "horizontal",
+		legend.text = element_text(size=9)) +
 	ylab("Count") +
 	xlab("Relative Error")
 ggsave(paste0("figures/assoc-all-distr-hist-rora.pdf"),

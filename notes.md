@@ -768,6 +768,12 @@ Also `allreduce-lr.cpp:41: [smpi_colls/WARNING] MPI_allreduce_lr use default MPI
   most "unbalanced" in a sense - we also find the error is pretty high.
 10. Plot stuff from `dotprod.tsv`
 11. Run simgrid with the simple sum program for different allreduce algorithms
+12. Explain what we get from each of figs 3,4,5
+   - 3: Forcing left associativity can have worse error
+   - 4: When generating random sums, the associativity matters more than
+        ordering (makes sense since FP addition is commutative). This also means
+        that `commute = true` should not make much difference with MPI custom operations.
+   - 5: U(-1,1) has the worst error, probably because more catastrophic cancellation happens
 
 ## Paper writing
 ### 8/12/20
@@ -777,5 +783,7 @@ Also `allreduce-lr.cpp:41: [smpi_colls/WARNING] MPI_allreduce_lr use default MPI
 - Put averages in table for figs 3,4,5
 
 ### 8/16/20
-Talapas is a pain. You have to load the modules in sbatch if you didn't load
+- Talapas is a pain. You have to load the modules in sbatch if you didn't load
 them in the interactive shell.
+- `assoc.R` needs some improvement with how it handles the bin counting. It's
+  probably just better to used a fixed count in most cases.

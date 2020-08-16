@@ -66,10 +66,10 @@ nbt$count <- nbt %>%
 p <- ggplot(nbt, aes(x = algo, y = difference, group = difference)) +
 	geom_bar(stat = "identity", color = "black", position = "dodge", fill = canon$fill_color) +
 	geom_text(aes(label = count), position = position_dodge(0.9), vjust = -0.7, size = 3) +
-	theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
-	ylim(0, max(nbt$difference * 1.5)) +
+	theme(axis.text.x = element_text(angle = 30, hjust = 1, size = 10)) +
 	labs(title = paste("Unique Results for Nekbone on a", topo_fmt(nbt_topo))) +
 	scale_y_continuous(
+		limits = c(0, max(nbt$difference)*1.1), # Make room for the counts
 		labels = function(x) sprintf("%0.2e", x),
 		breaks = seq(min(nbt$difference), max(nbt$difference), length.out = 6)) +
 	xlab("Allreduce Algorithm") +
@@ -84,10 +84,10 @@ p <- p + geom_segment(
 	    yend = top_edge*0.9 + min_res_nbt - next_dbl(min_res_nbt)),
 	size = 1) +
 	geom_text(aes(x = left_edge*1.4,
-	              y = top_edge*0.9 + 0.5 * (min_res_nbt - next_dbl(min_res_nbt)),
-	              label = "= machine eps"),
+	              y = top_edge*0.9 + 1.0 * (min_res_nbt - next_dbl(min_res_nbt)),
+	              label = "= space between doubles"),
 	          size = 3, vjust = 0, hjust = "left", nudge_x = 0.1)
-ggsave(paste0("figures/nekbone-trials.pdf"), plot = p, height = 5.5)
+ggsave(paste0("figures/nekbone-trials.pdf"), plot = p, height = 3.5)
 
 # These are nice to have, but too verbose for the figure.
 cat(paste("minimum trials =", min_trials, "\n"))
@@ -111,6 +111,7 @@ p <- ggplot(nbu, aes(y = cg_residual, fill = topology, x = algo)) +
 	theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
 	scale_fill_viridis_d(option = "plasma") +
 	labs(title = "Nekbone with Simgrid Allreduce Algorithms")
+ggsave(paste0("figures/nekbone-weird-timing.pdf"), plot = p, height = 3.5)
 
 nbs <- nbu %>%
 	group_by(elements, NP, topology, cg_residual) %>%
@@ -127,6 +128,6 @@ p <- ggplot(nbs, aes(y = cg_residual, fill = topology, x = algos_index)) +
 	scale_fill_viridis_d() +
 	labs(title = "Nekbone with Simgrid Allreduce Algorithms",
 		caption = paste("elements =", format(canon$elements,big.mark=","))) +
-	xlab("Subset of Allreduce Algorithms") +
+	xlab("Subset of Allreduce Algorithms")
 ggsave(paste0("figures/nekbone-subset.pdf"), plot = p, height = 3.5)
 
