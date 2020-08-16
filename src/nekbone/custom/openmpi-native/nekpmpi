@@ -26,7 +26,7 @@ for NP in $NP_COUNT; do
 	sed "s/400 400 1 = iel0,ielN/$IEL0 $IELN $IEL0 = iel0,ielN/g" data.rea.orig > data.rea
 	for ALGO in $OMPI_ALGOS; do
 		for TRIAL in $TRIAL_FMT; do
-			mpirun -np $NP --mca coll_tuned_reduce_algorithm $ALGO ./nekbone ex1 $NP > $LOG_DIR/log-np$NP-a$ALGO-$TRIAL.txt
+			mpirun -np $NP --mca coll_tuned_allreduce_algorithm $ALGO ./nekbone ex1 $NP > $LOG_DIR/log-np$NP-a$ALGO-$TRIAL.txt
 		done
 	done
 done

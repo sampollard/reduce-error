@@ -2,6 +2,7 @@
 # Run some experiments with slurm. Will need to be adjusted for your system
 # I found `sacctmgr list account` useful
 set -u -e
+OMPI_ALLREDUCE=0                # Set to 1 to cycle through OpenMPI allreduce algos
 LOG_DIR=logs                    # where to store output
 ACCOUNT=hpcl                    # change this to your actual account for charging
 PARTITION=short                 # queue to submit to
@@ -23,6 +24,19 @@ NUM_TRIALS=100
 
 ./makenek
 
+ALGO=1
+if [ "$OMPI_ALLREDUCE" -eq 1 ]; then
+	OMPI_OPT_START="for ALGO in 0 1 2 3 4 5 6; do"
+	OMPI_OPT_ARG="--mca coll_tuned_allreduce_algorithm \$ALGO"
+	OMPI_OPT_FN="-a\$ALGO"
+	OMPI_OPT_END="done"
+else
+	OMPI_OPT_START=""
+	OMPI_OPT_ARG=""
+	OMPI_OPT_FN=""
+	OMPI_OPT_END=""
+fi
+
 # LOOP
 IEL0=$(echo "$LELT / $NP" | bc)
 IELN=$(echo "$IEL0 * 2 + 1" | bc)
@@ -43,9 +57,11 @@ cat <<EndOfTransmission > nekbone-batch.sh
 #SBATCH --cpus-per-task="$CPUS_PER_TASK"
 
 TRIAL_FMT=\$(seq -f '%04.0f' 1 $NUM_TRIALS)
+$OMPI_OPT_START
 for TRIAL in \$TRIAL_FMT; do
-	mpirun -np $NODES ./nekbone ex1 $NODES > $LOG_DIR/log-np$NP-\$TRIAL.txt
+	mpirun -np $NODES $OMPI_OPT_ARG ./nekbone ex1 $NODES > $LOG_DIR/log-np$NP$OMPI_OPT_FN-\$TRIAL.txt
 done
+$OMPI_OPT_END
 EndOfTransmission
 
 echo "nekbone-batch.sh created. Now run"
