@@ -55,12 +55,13 @@ distr_expr <- function(x) {
 }
 
 # Reading in different distributions.
-read_experiment <- function(fn, fields = c("order","fp_decimal")) {
+read_experiment <- function(fn, fields = c("order","fp_a")) {
 	df <- read.table(file = fn, sep = "\t", header = TRUE)
 	stopifnot(all(df$veclen == df$veclen[1]))
 	veclen <- df$veclen[1]
 	# Filter and get more R-friendly
-	colnames(df)[4] <- "fp_decimal"
+	colnames(df)[colnames(df) == "FP..decimal."] <- "fp_decimal"
+	colnames(df)[colnames(df) == "FP...a."] <- "fp_a"
 	df = subset(df, select = fields)
 	return(df)
 }
@@ -76,11 +77,11 @@ read_mpfr <- function(fn) {
 }
 
 # Relative Error
-rel_err <- function(x, r) { abs((x$fp_decimal - r)/r) }
+rel_err <- function(x, r) { abs((x$fp_a - r)/r) }
 
 rel_err_mpfr <- function(x, r) {
 	stopifnot(class(r) == "mpfr")
-	xm <- mpfr(x$fp_decimal, 3324)
+	xm <- mpfr(x$fp_a, 3324)
 	abs((xm - r)/r)
 }
 
@@ -112,18 +113,18 @@ for (x in c("unif11", "unif1000", "subn")) {
 	l <- read_mpfr(fn)
 	veclen <- l[[1]]
 	mpfr_1000_m <- l[[2]]
-	canonical <- df$fp_decimal[df$order == "Left assoc"]
-	mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
+	canonical <- df$fp_a[df$order == "Left assoc"]
+	mpfr_1000 <- df$fp_a[df$order == "MPFR(3324) left assoc"]
 
 	allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
 	# Convert from the raw numbers to errors with respect to mpfr
-	allr$error_mpfr <- mpfr_1000 - allr$fp_decimal
+	allr$error_mpfr <- mpfr_1000 - allr$fp_a
 	fora <- allr[allr$order == "Random assoc",]
 	rola <- allr[allr$order == "Shuffle l assoc",]
 	rora <- allr[allr$order == "Shuffle rand assoc",]
 	cat(sprintf("*** %s ***\n",x))
 	cat(sprintf(paste0("min:\t",ffmt,"\nmax:\t",ffmt,"\ncanon:\t",ffmt,"\nmpfr:\t",ffmt,"\n"),
-		min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
+		min(allr$fp_a), max(allr$fp_a), canonical, mpfr_1000))
 	cat(sprintf(paste0("abs error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 		mean(abs(fora$error_mpfr)),
 		mean(abs(rola$error_mpfr)),
@@ -151,18 +152,18 @@ for (x in c("unif11", "unif1000", "subn")) {
 # unif(0,1) is separate because we focus on this one a lot
 distr <- "unif01"
 df <- read_experiment(paste0(base_dir,"assoc-r",distr,".tsv"))
-canonical <- df$fp_decimal[df$order == "Left assoc"]
-mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
+canonical <- df$fp_a[df$order == "Left assoc"]
+mpfr_1000 <- df$fp_a[df$order == "MPFR(3324) left assoc"]
 allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
 # Convert from the raw numbers to errors with respect to mpfr
-allr$error_mpfr <- mpfr_1000 - allr$fp_decimal
+allr$error_mpfr <- mpfr_1000 - allr$fp_a
 fora  <- allr[allr$order == "Random assoc",]
 rola <- allr[allr$order == "Shuffle l assoc",]
 rora <- allr[allr$order == "Shuffle rand assoc",]
 
 cat(sprintf("*** %s ***\n", distr))
 cat(sprintf(paste0("min:\t",ffmt,"\nmax:\t",ffmt,"\ncanon:\t",ffmt,"\nmpfr:\t",ffmt,"\n"),
-	min(allr$fp_decimal), max(allr$fp_decimal), canonical, mpfr_1000))
+	min(allr$fp_a), max(allr$fp_a), canonical, mpfr_1000))
 cat(sprintf(paste0("abs error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 	mean(abs(fora$error_mpfr)),
 	mean(abs(rola$error_mpfr)),
@@ -325,14 +326,14 @@ ggsave(paste0("figures/assoc-r",distr,"-hist-allr.pdf"), plot = p, height = heig
 ###             Comparing Uniform [0,1] and [-1,1]                ###
 #####################################################################
 get_distribution_data <- function(fn) {
-	df <- read_experiment(fn, fields = c("order","distribution","fp_decimal"))
+	df <- read_experiment(fn, fields = c("order","distribution","fp_a"))
 	l <- read_mpfr(fn)
 	veclen <- l[[1]]
 	mpfr_1000_m <- l[[2]]
-	canonical <- df$fp_decimal[df$order == "Left assoc"]
-	mpfr_1000 <- df$fp_decimal[df$order == "MPFR(3324) left assoc"]
+	canonical <- df$fp_a[df$order == "Left assoc"]
+	mpfr_1000 <- df$fp_a[df$order == "MPFR(3324) left assoc"]
 	allr <- df[df$order %in% c("Random assoc","Shuffle l assoc", "Shuffle rand assoc"),]
-	allr$error_mpfr <- mpfr_1000 - allr$fp_decimal
+	allr$error_mpfr <- mpfr_1000 - allr$fp_a
 	allr$relative_error <- rel_err(allr, mpfr_1000)
 
 	fora <- allr[allr$order == "Random assoc",]
@@ -411,3 +412,33 @@ p <- ggplot(rbind(d1,d2,d3,d4), aes(x = relative_error)) +
 	xlab("Relative Error")
 ggsave(paste0("figures/assoc-all-distr-hist-rora.pdf"),
 	plot = p, height = 4, width = 7)
+
+#####################################################################
+###            Looking at Reduction Tree Height                   ###
+#####################################################################
+# Is not very strongly correlated, so probably not good to plot
+base_dir <- 'experiments/with-height/'
+for (x in c("unif01", "unif11", "unif1000", "subn")) {
+	fn <- paste0(base_dir,"assoc-r",x,".tsv")
+	df <- read_experiment(fn, fields = c("order","distribution","fp_a","height"))
+	l <- read_mpfr(fn)
+	veclen <- l[[1]]
+	mpfr_1000_m <- l[[2]]
+	canonical <- df$fp_a[df$order == "Left assoc"]
+	mpfr_1000 <- df$fp_a[df$order == "MPFR(3324) left assoc"]
+	df$abs_err <- abs(df$fp_a - mpfr_1000)
+
+	fora <- df[df$order == "Random assoc",]
+	rho_fora <- cor(fora$abs_err, fora$height)
+	cat(sprintf("%s fora\tρ(abs_err,height) = %0.3f\n", x, rho_fora))
+
+	rora <- df[df$order == "Shuffle rand assoc",]
+	rho <- cor(rora$abs_err, rora$height)
+	cat(sprintf("%s rora\tρ(abs_err,height) = %0.3f\n", x, rho))
+
+	# Then plot for rora only
+	p <- ggplot(rora, aes(y = abs_err, x = height)) +
+		geom_point() +
+		geom_smooth(method = "lm") +
+		labs(caption = sprintf("cor = %.3f", rho))
+}
