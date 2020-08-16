@@ -1,6 +1,7 @@
 # Associativity experiments for uniform distribution
 library(ggplot2)
 library(Rmpfr)
+library(viridis)
 
 #####################################################################
 ###                Helper Functions and Constants                 ###
@@ -438,7 +439,11 @@ for (x in c("unif01", "unif11", "unif1000", "subn")) {
 
 	# Then plot for rora only
 	p <- ggplot(rora, aes(y = abs_err, x = height)) +
-		geom_point() +
+		#geom_point(alpha = 0.3) +
+		geom_bin2d(bins = 20) +
 		geom_smooth(method = "lm") +
-		labs(caption = sprintf("cor = %.3f", rho))
+		labs(caption = sprintf("cor = %.3f", rho)) +
+		scale_fill_viridis()
+	ggsave(paste0("figures/cor-rora-r",x,".pdf"),
+		plot = p, height = 4)
 }
