@@ -1,5 +1,6 @@
 # Associativity experiments for uniform distribution
 library(ggplot2)
+library(gmp)
 library(Rmpfr)
 library(viridis)
 
@@ -326,7 +327,7 @@ p <- ggplot(rbind(fora,rora), aes(x = abs(error_mpfr))) +
 						 "|A|" == .(format(veclen, big.mark=","))*"," ~~~
 						 .(distr_expr(distr)))) +
 	ylab("Count") +
-	xlab(expression(paste("Error as |",sum[mpfr] - sum[double],"|")))
+	xlab("Absolute Error") # expression(paste("Error as |",sum[mpfr] - sum[double],"|")))
 ggsave(paste0("figures/assoc-r",distr,"-hist-fora-rora-abs.pdf"), plot = p, height = 3.5, width = 6)
 
 # FIXME: I want to put the max error bounds...
@@ -446,7 +447,7 @@ ggsave(paste0("figures/assoc-all-distr-hist-rora.pdf"),
 #####################################################################
 ###            Looking at Reduction Tree Height                   ###
 #####################################################################
-# Is not very strongly correlated, so probably not good to plot
+# Is not very strongly correlated
 base_dir <- 'experiments/with-height/'
 for (x in c("unif01", "unif11", "unif1000", "subn")) {
 	fn <- paste0(base_dir,"assoc-r",x,".tsv")
@@ -457,22 +458,28 @@ for (x in c("unif01", "unif11", "unif1000", "subn")) {
 	canonical <- df$fp_a[df$order == "Left assoc"]
 	mpfr_1000 <- df$fp_a[df$order == "MPFR(3324) left assoc"]
 	df$abs_err <- abs(df$fp_a - mpfr_1000)
+	df$relative_error <- rel_err(df, mpfr_1000)
 
 	fora <- df[df$order == "Random assoc",]
-	rho_fora <- cor(fora$abs_err, fora$height)
-	cat(sprintf("%s fora\tρ(abs_err,height) = %0.3f\n", x, rho_fora))
+	rho_fora <- cor(fora$relative_error, fora$height)
+	cat(sprintf("%s fora\tρ(rel err,height) = %0.3f\n", x, rho_fora))
 
 	rora <- df[df$order == "Shuffle rand assoc",]
-	rho <- cor(rora$abs_err, rora$height)
-	cat(sprintf("%s rora\tρ(abs_err,height) = %0.3f\n", x, rho))
+	rho <- cor(rora$relative_error, rora$height)
+	cat(sprintf("%s rora\tρ(rel err,height) = %0.3f\n", x, rho))
 
 	# Then plot for rora only
-	p <- ggplot(rora, aes(y = abs_err, x = height)) +
-		#geom_point(alpha = 0.3) +
-		geom_bin2d(bins = 20) +
+	p <- ggplot(rora, aes(y = relative_error, x = height)) +
+		geom_point(shape = "square", size = 0.5) +
+		#geom_bin2d(bins = 20) +
 		geom_smooth(method = "lm") +
-		labs(caption = sprintf("cor = %.3f", rho)) +
-		scale_fill_viridis()
-	ggsave(paste0("figures/cor-rora-r",x,".pdf"),
-		plot = p, height = 4)
+		labs(title = paste("Reduction Tree Height with RORA and", distr_pp(x)),
+		     caption = sprintf("cor = %.3f, n = %s", rho, format(nrow(rora), big.mark=","))) +
+		scale_y_continuous(
+			breaks = seq(0, max(rora$relative_error), length.out = 4),
+			labels = function(x) sprintf("%0.1e", x)) +
+		xlab("Maximum Reduction Tree Height") +
+		ylab("Relative Error")
+	ggsave(paste0("figures/rora-height-r",x,".pdf"),
+		plot = p, scale = 0.8, height = 5)
 }

@@ -793,4 +793,7 @@ Also `allreduce-lr.cpp:41: [smpi_colls/WARNING] MPI_allreduce_lr use default MPI
 - SimGrid results are weird. The later trials all have the same result. Maybe
   it's because of how I built it? Earlier trials were recompiling more
   frequently. In the interest of time I didn't do that for trials > about 18.
-  Worth looking into in the future.
+  Worth looking into in the future. Maybe it's different compilation flags too?
+- Just for grins, I want to see if we assume subn is exponential (with 355 as
+  its factor, IIRC when we did expfit). I want to see how close the error is
+  with Robertazzi.
