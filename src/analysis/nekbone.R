@@ -47,13 +47,22 @@ nbt <- nbf %>%
 	filter(topology == nbt_topo)
 min_res_nbt <- min(nbt$cg_residual)
 nbt$difference <- nbt$cg_residual - min_res_nbt
+
 # Get the number of trials. To be conservative, count the minimum for
 # each experiment, where an experiment is each triple of (NP, topology, algo)
-min_trials <- nbt %>%
-	group_by(NP, topology, algo) %>%
-	summarize(num_trials = n_distinct(trial)) %>%
-	pull(num_trials) %>% min()
-nbt <- nbt %>% filter(trial < min_trials, .preserve = TRUE)
+# min_trials <- nbt %>%
+# 	group_by(NP, topology, algo) %>%
+# 	summarize(num_trials = n_distinct(trial)) %>%
+# 	pull(num_trials) %>% min()
+
+# Uh.... KISS. By the paper deadline I've done about 75 so choose that.
+min_trials <- 75
+
+# Here's a weird result. The later experiments are more consistent. If we do
+# nbt <- nbt %>% filter(trial <= min_trials, trial > 25, .preserve = TRUE)
+# and then plot, they are all the same result.
+
+nbt <- nbt %>% filter(trial <= min_trials, .preserve = TRUE)
 # For each unique cg_residual, count the total number of trials that
 # had that exact cg_residual
 nbt$count <- nbt %>%
@@ -77,17 +86,19 @@ p <- ggplot(nbt, aes(x = algo, y = difference, group = difference)) +
 # Add in a scale for machine epsilon. This feels a little hacky.
 left_edge <- ggplot_build(p)$layout$panel_params[[1]]$x.range[1]
 top_edge <- ggplot_build(p)$layout$panel_params[[1]]$y.range[2]
-p <- p + geom_segment(
-	aes(x    = left_edge*1.4,
-	    xend = left_edge*1.4,
-	    y    = top_edge*0.9,
-	    yend = top_edge*0.9 + min_res_nbt - next_dbl(min_res_nbt)),
-	size = 1) +
-	geom_text(aes(x = left_edge*1.4,
-	              y = top_edge*0.9 + 1.0 * (min_res_nbt - next_dbl(min_res_nbt)),
-	              label = "= space between doubles"),
-	          size = 3, vjust = 0, hjust = "left", nudge_x = 0.1)
-ggsave(paste0("figures/nekbone-trials.pdf"), plot = p, height = 3.5)
+p <- p +
+	geom_segment(
+		aes(x    = left_edge*1.4,
+			xend = left_edge*1.4,
+			y    = top_edge*0.9,
+			yend = top_edge*0.9 + min_res_nbt - next_dbl(min_res_nbt)),
+		size = 1) +
+	annotate("text",
+		x = left_edge*1.4 + 0.1, # Can't use nudge_x for annotate
+		y = top_edge*0.9 + 0.8 * (min_res_nbt - next_dbl(min_res_nbt)),
+		label = "= gap between doubles",
+		size = 3, vjust = 0, hjust = "left")
+ggsave(paste0("figures/nekbone-trials.pdf"), plot = p, height = 5)
 
 # These are nice to have, but too verbose for the figure.
 cat(paste("minimum trials =", min_trials, "\n"))

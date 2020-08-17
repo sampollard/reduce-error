@@ -752,10 +752,10 @@ Also `allreduce-lr.cpp:41: [smpi_colls/WARNING] MPI_allreduce_lr use default MPI
 
 ## Next steps
 1. ✓ Do runiform[-1,1]
-2. (low priority) Kahan Summation
-3. (low priority) Repro BLAS (at least cite)
+2. ✓ (low priority) Kahan Summation
+3. ✓ (low priority) Repro BLAS (at least cite)
 3. ✓ Do the nearly-subnormal generation
-4. Cite that interesting not-quite paper on generating FP numbers (Generating
+4.  Cite that interesting not-quite paper on generating FP numbers (Generating
   Pseudo-random Floating-Point Values, Allen B. Downey)  maybe even implement
   it.  Weird, this one's from
   [Computational Science](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7302591/)
@@ -763,27 +763,34 @@ Also `allreduce-lr.cpp:41: [smpi_colls/WARNING] MPI_allreduce_lr use default MPI
 6. ✓ Cite https://oeis.org/A001147
 7. ✓ Multiple histograms
 8. ✓ Make the "nearly identical" plot so it looks uniform
-9. Investigate the following: Is there a fundamental tradeoff between the
+9. ✓ Investigate the following: Is there a fundamental tradeoff between the
   height of the reduction tree and the error? e.g. left-associative is the
   most "unbalanced" in a sense - we also find the error is pretty high.
-10. Plot stuff from `dotprod.tsv`
-11. Run simgrid with the simple sum program for different allreduce algorithms
+
+  Answer: Kind of? There is a positive correlation (except for unif(-1,1) which
+  is slightly negative. Further work necessary.
+10. ✗ Plot stuff from `dotprod.tsv`
+11. ✗ Run simgrid with the simple sum program for different allreduce algorithms
 12. Explain what we get from each of figs 3,4,5
-   - 3: Forcing left associativity can have worse error
+   - ✓ 3: Forcing left associativity can have worse error
    - 4: When generating random sums, the associativity matters more than
         ordering (makes sense since FP addition is commutative). This also means
         that `commute = true` should not make much difference with MPI custom operations.
-   - 5: U(-1,1) has the worst error, probably because more catastrophic cancellation happens
+   - ✓ 5: U(-1,1) has the worst error, probably because more catastrophic cancellation happens
+13. ✓ Put averages in table for figs 3,4,5
 
 ## Paper writing
 ### 8/12/20
 - Hypothesis that different simgrid reductions on nekbone will cause different
-  results is false. I don't know why. It seems to be more robust that I
-  expected.
-- Put averages in table for figs 3,4,5
+  results is not false, but nekbone+simgrid is pretty reproducible. I don't
+  know why. It seems to be more robust that I expected.
 
-### 8/16/20
+### Final Paper Steps: Aug 16-17
 - Talapas is a pain. You have to load the modules in sbatch if you didn't load
-them in the interactive shell.
+  them in the interactive shell.
 - `assoc.R` needs some improvement with how it handles the bin counting. It's
   probably just better to used a fixed count in most cases.
+- SimGrid results are weird. The later trials all have the same result. Maybe
+  it's because of how I built it? Earlier trials were recompiling more
+  frequently. In the interest of time I didn't do that for trials > about 18.
+  Worth looking into in the future.

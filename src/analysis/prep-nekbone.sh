@@ -23,8 +23,9 @@ for NP in 16 36; do
 done
 
 # Running on a cluster
-DIR="experiments/cluster"
+DIR="experiments/talapas"
 PREFIX="log-"
+NP=16
 for f in $DIR/$PREFIX*.txt; do
 	fb=$(basename $f)
 	NP=$(echo $fb    | sed -E 's/log-np([0-9]+)-a([0-9]+)-([0-9]+)\.txt/\1/g')

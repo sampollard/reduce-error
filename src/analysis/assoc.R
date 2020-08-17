@@ -431,14 +431,17 @@ p <- ggplot(rbind(d1,d2,d3,d4), aes(x = relative_error)) +
 		caption = bquote(n == .(format(nrow(d1),big.mark=","))*"," ~~~
 						 "|A|" == .(format(l1$veclen, big.mark=",")))) +
 	theme(legend.title = element_blank(),
-		legend.position = "top",
+		legend.position = c(0.99,0.85),
+		legend.spacing = unit(0.1, 'cm'),
 		legend.direction = "horizontal",
-		legend.box = "horizontal",
+		legend.justification = "right",
+		legend.box = "vertical",
+		legend.box.just = "right",
 		legend.text = element_text(size=9)) +
 	ylab("Count") +
 	xlab("Relative Error")
 ggsave(paste0("figures/assoc-all-distr-hist-rora.pdf"),
-	plot = p, height = 4, width = 7)
+	plot = p, height = 4, width = 8)
 
 #####################################################################
 ###            Looking at Reduction Tree Height                   ###
