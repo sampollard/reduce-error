@@ -2,26 +2,57 @@
 # correctly. Experiments should be run per-processor count.
 # Usage:
 #    cd test/example1
-#    make -j -f ../../exp-Makefile TRIAL=<N> np-16
+#    make -j -f ../../exp-Makefile TRIAL=<N> TOPO=fattree-72 NP=72 all
 TRIAL ?= 000
-ALLREDUCE ?= default
+TOPO ?= fattree-72
+NP ?= 72
 
 nekbone: SIZE
 	./makenek
 
-.PHONY: np-16 np-72
-np-16: fattree-16 torus-2-2-4
-np-72: fattree-72 torus-2-4-9
+all : default ompi mpich mvapich2 impi rab1 rab2 rab_rsag rdb smp_binomial smp_binomial_pipeline smp_rdb smp_rsag smp_rsag_lr smp_rsag_rab redbcast ompi_ring_segmented mvapich2_rs mvapich2_two_level rab 
 
-.PHONY: torus-2-2-4 torus-2-4-9 fattree-16 fattree-72
-torus-2-2-4: nekbone
-	./nekpmpi $@ 16 $(ALLREDUCE) $(TRIAL)
-torus-2-4-9: nekbone
-	./nekpmpi $@ 72 $(ALLREDUCE) $(TRIAL)
-fattree-16: nekbone
-	./nekpmpi $@ 16 $(ALLREDUCE) $(TRIAL)
-fattree-72: nekbone
-	./nekpmpi $@ 72 $(ALLREDUCE) $(TRIAL)
+.PHONY: default ompi mpich mvapich2 impi rab1 rab2 rab_rsag rdb smp_binomial smp_binomial_pipeline smp_rdb smp_rsag smp_rsag_lr smp_rsag_rab redbcast ompi_ring_segmented mvapich2_rs mvapich2_two_level rab 
+default: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+ompi: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+mpich: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+mvapich2: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+impi: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+rab1: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+rab2: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+rab_rsag: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+rdb: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+smp_binomial: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+smp_binomial_pipeline: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+smp_rdb: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+smp_rsag: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+smp_rsag_lr: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+smp_rsag_rab: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+redbcast: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+ompi_ring_segmented: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+mvapich2_rs: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+mvapich2_two_level: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
+rab: nekbone
+	./nekpmpi $(TOPO) $(NP) $@ $(TRIAL)
 
 .PHONY: clean
 clean:
