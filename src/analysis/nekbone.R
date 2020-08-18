@@ -69,7 +69,7 @@ filter_nbf <- function (df, topo, filter_algos = c(), min_trials = NULL) {
 
 nbt_topo <- "fattree-72"
 # Uh.... KISS. By the paper deadline I've done about 75 so choose that.
-min_trials <- 75
+min_trials <- 69 #
 
 # Single out one topology. Filter out smp_rsag by default because it makes
 # other points all look the same, even with a log scale.

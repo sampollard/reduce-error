@@ -161,10 +161,14 @@ for (x in c("unif11", "unif1000", "subn")) {
 		mean(abs(rora$error_mpfr))))
 	cat(sprintf(paste0("analy:\t",ffmt,"\n"), analytical_abs_bound(veclen, x)))
 	cat(sprintf(paste0("rober:\t",ffmt,"\n"), robertazzi_bound(veclen, x)))
-	cat(sprintf(paste0("rel error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
+	cat(sprintf(paste0("mean rel error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 		mean(rel_err(fora,mpfr_1000)),
 		mean(rel_err(rola,mpfr_1000)),
 		mean(rel_err(rora,mpfr_1000))))
+	cat(sprintf(paste0("max rel:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
+		max(rel_err(fora,mpfr_1000)),
+		max(rel_err(rola,mpfr_1000)),
+		max(rel_err(rora,mpfr_1000))))
 	cat(sprintf(paste0("sla:\t",ffmt,"\n"), abs((canonical-mpfr_1000)/mpfr_1000)))
 	cat(sprintf(paste0("analy:\t",ffmt,"\n"), abs(analytical_abs_bound(veclen, x)/mpfr_1000)))
 	mu <- mu_distr(x)
@@ -206,12 +210,16 @@ cat(sprintf(paste0("abs error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,
 	mean(abs(rola$error_mpfr)),
 	mean(abs(rora$error_mpfr))))
 cat(sprintf(paste0("analy:\t",ffmt,"\n"), analytical_abs_bound(veclen, distr)))
-cat(sprintf(paste0("rel error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
+cat(sprintf(paste0("mean rel error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 	mean(rel_err(fora,mpfr_1000)),
 	mean(rel_err(rola,mpfr_1000)),
 	mean(rel_err(rora,mpfr_1000))))
-	cat(sprintf(paste0("sla:\t",ffmt,"\n"), abs((canonical-mpfr_1000)/mpfr_1000)))
-	cat(sprintf(paste0("analy:\t",ffmt,"\n"), abs(analytical_abs_bound(veclen, x)/mpfr_1000)))
+cat(sprintf(paste0("max rel:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
+	max(rel_err(fora,mpfr_1000)),
+	max(rel_err(rola,mpfr_1000)),
+	max(rel_err(rora,mpfr_1000))))
+cat(sprintf(paste0("sla:\t",ffmt,"\n"), abs((canonical-mpfr_1000)/mpfr_1000)))
+cat(sprintf(paste0("analy:\t",ffmt,"\n"), abs(analytical_abs_bound(veclen, x)/mpfr_1000)))
 cat(sprintf("Unique:\nfora:\t%d\nrola:\t%d\nrora:\t%d\n",
 	length(unique(fora$error_mpfr)), length(unique(rola$error_mpfr)), length(unique(rora$error_mpfr))))
 cat(sprintf("Nonidentical (fora - rora): %d\n", length(intersect(fora$error_mpfr, rora$error_mpfr))))
@@ -462,42 +470,3 @@ p <- ggplot(rbind(d1,d2,d3,d4), aes(x = relative_error)) +
 ggsave(paste0("figures/assoc-all-distr-hist-rora.pdf"),
 	plot = p, scale = 0.9, height = 4.5, width = 7)
 
-#####################################################################
-###            Looking at Reduction Tree Height                   ###
-#####################################################################
-# Is not very strongly correlated
-base_dir <- 'experiments/with-height/'
-for (x in c("unif01", "unif11", "unif1000", "subn")) {
-	fn <- paste0(base_dir,"assoc-r",x,".tsv")
-	df <- read_experiment(fn, fields = c("order","distribution","fp_a","height"))
-	l <- read_mpfr(fn)
-	veclen <- l[[1]]
-	mpfr_1000_m <- l[[2]]
-	canonical <- df$fp_a[df$order == "Left assoc"]
-	mpfr_1000 <- df$fp_a[df$order == "MPFR(3324) left assoc"]
-	df$abs_err <- abs(df$fp_a - mpfr_1000)
-	df$relative_error <- rel_err(df, mpfr_1000)
-
-	fora <- df[df$order == "Random assoc",]
-	rho_fora <- cor(fora$relative_error, fora$height)
-	cat(sprintf("%s fora\tρ(rel err,height) = %0.3f\n", x, rho_fora))
-
-	rora <- df[df$order == "Shuffle rand assoc",]
-	rho <- cor(rora$relative_error, rora$height)
-	cat(sprintf("%s rora\tρ(rel err,height) = %0.3f\n", x, rho))
-
-	# Then plot for rora only
-	p <- ggplot(rora, aes(y = relative_error, x = height)) +
-		geom_point(shape = "square", size = 0.5) +
-		#geom_bin2d(bins = 20) +
-		geom_smooth(method = "lm") +
-		labs(title = paste("Reduction Tree Height with RORA and", distr_pp(x)),
-		     caption = sprintf("cor = %.3f, n = %s", rho, format(nrow(rora), big.mark=","))) +
-		scale_y_continuous(
-			breaks = seq(0, max(rora$relative_error), length.out = 4),
-			labels = function(x) sprintf("%0.1e", x)) +
-		xlab("Maximum Reduction Tree Height") +
-		ylab("Relative Error")
-	ggsave(paste0("figures/rora-height-r",x,".pdf"),
-		plot = p, scale = 0.8, height = 5)
-}
