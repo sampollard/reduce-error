@@ -106,11 +106,11 @@ p <- p +
 			yend = top_edge*0.9 + min_res_nbt - next_dbl(min_res_nbt)),
 		size = 1) +
 	annotate("text",
-		x = left_edge*1.4 + 0.1, # Can't use nudge_x for annotate
+		x = left_edge*1.4 + 0.15, # Can't use nudge_x for annotate
 		y = top_edge*0.9 + 0.8 * (min_res_nbt - next_dbl(min_res_nbt)),
 		label = "= gap between doubles",
 		size = 3, vjust = 0, hjust = "left")
-ggsave(paste0("figures/nekbone-trials.pdf"), plot = p, height = 5)
+ggsave(paste0("figures/nekbone-trials.pdf"), plot = p, scale = 0.85, height = 5, width = 7)
 
 # These are nice to have, but too verbose for the figure.
 cat(paste("minimum trials =", min_trials, "\n"))
