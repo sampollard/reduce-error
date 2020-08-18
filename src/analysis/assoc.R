@@ -118,8 +118,18 @@ analytical_abs_bound <- function(n, d) {
 	return(EPS*(n-1)*s + EPS^2)
 }
 
-# Only applies for positive numbers
-robertazzi_bound <- function(mu, n) {
+# Only applies for values distributed unif(0,2mu) or exp(mu)
+# Annoyingly, Robertazzi & Schwartz use
+# exp(mu) to mean exponential distribution with mean mu
+mu_distr <- function(d) {
+	switch(d,
+		"unif01"   = 0.5,
+		"unif11"   = NA,
+		"unif1000" = NA,
+		"subn"     = 1./354.387) # Computed via subn.R
+}
+robertazzi_bound <- function(n, d) {
+	mu <- mu_distr(d)
 	return((1/3) * (mu/2)^2 * n^3 * EPS^2 * (1/12))
 }
 
@@ -150,12 +160,15 @@ for (x in c("unif11", "unif1000", "subn")) {
 		mean(abs(rola$error_mpfr)),
 		mean(abs(rora$error_mpfr))))
 	cat(sprintf(paste0("analy:\t",ffmt,"\n"), analytical_abs_bound(veclen, x)))
+	cat(sprintf(paste0("rober:\t",ffmt,"\n"), robertazzi_bound(veclen, x)))
 	cat(sprintf(paste0("rel error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 		mean(rel_err(fora,mpfr_1000)),
 		mean(rel_err(rola,mpfr_1000)),
 		mean(rel_err(rora,mpfr_1000))))
 	cat(sprintf(paste0("sla:\t",ffmt,"\n"), abs((canonical-mpfr_1000)/mpfr_1000)))
 	cat(sprintf(paste0("analy:\t",ffmt,"\n"), abs(analytical_abs_bound(veclen, x)/mpfr_1000)))
+	mu <- mu_distr(x)
+	cat(sprintf(paste0("rober:\t",ffmt,"\n"), abs(robertazzi_bound(veclen, x))/mpfr_1000))
 	# This is pretty slow
 	# cat(sprintf("rel error mpfr:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n",
 	# 	mean(rel_err_mpfr(fora,mpfr_1000_m)),

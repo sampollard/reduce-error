@@ -17,5 +17,5 @@ p <- ggplot(dfm, aes(x = value, fill = variable)) +
 	geom_histogram(bins = 51, color = "black", position = "dodge") +
 	#stat_function(fun = dexp, args = (rate=efit$estimate)) + # This looks bad
 	scale_x_continuous(trans="log2", limits=c(2^(-1022),2)) +
-	scale_fill_viridis_d()
+	scale_fill_viridis_d(begin = 0.1, end = 0.9, direction = -1, option = "plasma")
 ggsave('figures/rsubn.pdf', plot = p, height=2.5)
