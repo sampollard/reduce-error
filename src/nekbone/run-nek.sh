@@ -22,7 +22,7 @@ ALLREDUCE_ALGOS="default ompi mpich mvapich2 impi rab1 rab2 rab_rsag rdb smp_bin
 # lr automatic
 
 # Some necessary janitorial code. SIZE contains compile-time constants
-TRIAL_FMT=$(seq --format='%03.0f' 19 $NUM_TRIALS)
+TRIAL_FMT=$(seq --format='%03.0f' 1 $NUM_TRIALS)
 LELG=$(echo "$LP * $LELT" | bc)
 cp ../../custom/SIZE .
 

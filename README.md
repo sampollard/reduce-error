@@ -26,3 +26,60 @@
 - NOTE: Do `make clean` before changing between MPI (the default) and non-mpi
   (`USE_MPI=0 make`)
 
+# Re-generating the tsv files
+(8/17/2020)
+
+Versions of software:
+- Boost 1.72.0
+- Simgrid 3.25.1, or commit hash 4b7251c4ac80f95f82ac25ecfb3a9f618150cb11
+- GCC 7.5.0 and OpenMPI 4.0.3 on the single-node
+- GCC 7/3 and OpenMPI 2.1 on the multi-node cluster (talapas)
+
+Some of the directories here were not used to generate the results, but could be added in.
+
+The three that are used in `./prep-nekbone.sh`:
+1. `openmpi`
+2. `talapas`
+3. `simgrid`
+
+This directory is used in `assoc.R`:
+1. `assoc`
+This is used in `height.R`:
+1. `with-height`
+
+To modify for even more experiments, you can run `prep-nekbone.sh` with
+
+- `experiments/talapas` --> `experiments/onenode-allreduce`. Those are the same
+  file format. You can copy that "paragraph" whose line starts with "Running on
+  a cluster" and change `DIR` if you want both.
+
+You can run `./prep-nekbone.sh` to generate nekbone.tsv.
+
+As far as regenerating experiments, this should do it:
+```
+# inside `nekbone`
+./prep-nek-slurm.sh
+sbatch nekbone-batch.sh
+
+# This one will take a while. By default it only does 72-node (same as paper)
+# but you can also add in 16 and also uncomment the `torus-2-4-9` line
+./run-nek.sh
+
+# inside `src`
+USE_MPI=0 make gen_random
+./gen_random 10000 rsubn > analysis/experiments/subn.tsv
+
+# This one also takes a bit. Maybe an hour or two. You no longer need the
+# `with-height` directory since the updated assoc binary now prints that column
+USE_MPI=0 make -j assoc
+```
+
+For figures, you should just be able to run `Rscript <file>` for each of the R
+files, as long as the datasets are in the `experiments` directory.
+
+The tar was created using
+```
+tar -a -cvf datasets.tar.bz2 README.md nekbone.tsv subn.tsv openmpi talapas simgrid assoc with-height onenode-allreduce
+```
+
+Happy reproducing
