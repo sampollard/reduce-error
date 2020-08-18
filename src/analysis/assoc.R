@@ -245,7 +245,7 @@ p <- ggplot(rora, aes(x = error_mpfr)) +
 						 "\n|A| = ", format(veclen, big.mark=","))) +
 	ylab("Count") +
 	xlab(expression(sum[mpfr] - sum[double]))
-ggsave(paste0("figures/assoc-r",distr,"-hist-rora.pdf"), plot = p, height = height)
+ggsave(paste0("figures/assoc-r",distr,"-hist-rora.pdf"), plot = p, scale = 0.9, height = 4)
 
 # Shuffle Random Associations vs. Shuffle, left-associative
 # Second data frame for vertical lines
@@ -279,17 +279,21 @@ p <- ggplot(rbind(rola,rora), aes(x = error_mpfr, fill = order)) +
 		values = hist_style$Fill,
 		labels = hist_style$Statistic) +
 	guides(fill = guide_legend(override.aes = list(linetype = 0))) +
-	labs(title = "Random Associativity With and Without Random Ordering",
+	labs(title = "Random Ordering With and Without Random Associativity",
 		caption = bquote(n == .(format(nrow(rola),big.mark=","))*"," ~~~
 						 "|A|" == .(format(veclen, big.mark=","))*"," ~~~
 						 .(distr_expr(distr)))) +
 	theme(legend.title = element_blank(),
-		legend.position = "top",
+		legend.position = c(0.99,0.99),
+		legend.spacing = unit(0.1, 'cm'),
 		legend.direction = "horizontal",
-		legend.box = "horizontal") +
+		legend.justification = c("right","top"),
+		legend.box = "vertical",
+		legend.box.just = "right",
+		legend.text = element_text(size = 8)) +
 	ylab("Count") +
 	xlab(expression(sum[mpfr] - sum[double]))
-ggsave(paste0("figures/assoc-r",distr,"-hist-rola-rora.pdf"), plot = p, height = 4, width = 6)
+ggsave(paste0("figures/assoc-r",distr,"-hist-rola-rora.pdf"), plot = p, scale = 0.9, height = 4, width = 6)
 
 # The two that look very similar
 vlines <- data.frame(
@@ -326,16 +330,17 @@ p <- ggplot(rbind(fora,rora), aes(x = abs(error_mpfr))) +
 		caption = bquote(n == .(format(nrow(rola),big.mark=","))*"," ~~~
 						 "|A|" == .(format(veclen, big.mark=","))*"," ~~~
 						 .(distr_expr(distr)))) +
+	theme(legend.title = element_blank(),
+		legend.position = c(0.90,0.99),
+		legend.spacing = unit(0.1, 'cm'),
+		legend.direction = "horizontal",
+		legend.justification = c("right","top"),
+		legend.box = "vertical",
+		legend.box.just = "right",
+		legend.text = element_text(size = 8)) +
 	ylab("Count") +
 	xlab("Absolute Error") # expression(paste("Error as |",sum[mpfr] - sum[double],"|")))
-ggsave(paste0("figures/assoc-r",distr,"-hist-fora-rora-abs.pdf"), plot = p, height = 3.5, width = 6)
-
-# FIXME: I want to put the max error bounds...
-	# geom_segment(aes(
-	# 	x = max(abs(error_mpfr))/2,
-	# 	y = 0.7*max(p_count),
-	# 	xend = max(abs(error_mpfr)) + 1e9*DBL_MIN, #FIXME
-	# 	yend = 0.7*max(p_count)))
+ggsave(paste0("figures/assoc-r",distr,"-hist-fora-rora-abs.pdf"), plot = p, height = 4, width = 6)
 
 # Histogram for allr (separate) - I don't think this is informative
 binc <- sapply(list(allr), function(x) {length(unique(sort(x$error_mpfr)))})
@@ -345,7 +350,7 @@ p <- ggplot(allr, aes(x = error_mpfr)) +
 	geom_vline( # Mean of everything --- not sure this is helpful
 		aes(xintercept = mean(error_mpfr)),
 			color = "blue", linetype = "dotted", alpha = 1.0)
-ggsave(paste0("figures/assoc-r",distr,"-hist-allr.pdf"), plot = p, height = height)
+#ggsave(paste0("figures/assoc-r",distr,"-hist-allr.pdf"), plot = p, height = height)
 
 #####################################################################
 ###             Comparing Uniform [0,1] and [-1,1]                ###
@@ -432,17 +437,17 @@ p <- ggplot(rbind(d1,d2,d3,d4), aes(x = relative_error)) +
 		caption = bquote(n == .(format(nrow(d1),big.mark=","))*"," ~~~
 						 "|A|" == .(format(l1$veclen, big.mark=",")))) +
 	theme(legend.title = element_blank(),
-		legend.position = c(0.99,0.85),
+		legend.position = c(0.99,0.99),
 		legend.spacing = unit(0.1, 'cm'),
 		legend.direction = "horizontal",
-		legend.justification = "right",
+		legend.justification = c("right","top"),
 		legend.box = "vertical",
 		legend.box.just = "right",
 		legend.text = element_text(size=9)) +
 	ylab("Count") +
 	xlab("Relative Error")
 ggsave(paste0("figures/assoc-all-distr-hist-rora.pdf"),
-	plot = p, height = 4, width = 8)
+	plot = p, scale = 0.9, height = 4.5, width = 7)
 
 #####################################################################
 ###            Looking at Reduction Tree Height                   ###
