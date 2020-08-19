@@ -27,18 +27,19 @@ next_dbl <- function(x) {
 fn <- paste0('experiments/nekbone.tsv')
 nb <- na.omit(read.table(fn, header = TRUE, fill=TRUE))
 
-# Filter by where the residuals differ (across different trials) We filter out
-# the ones that didn't converge and smp_rsag_lr, which seems to do the wrong
-# algorithm
-nbf <- nb %>%
-	filter(elements == canon$elements) %>%
+# Let's investigate this further - smp_rsag_lr is the only allreduce
+# algorithm that doesn't for fattree-72
+nbnon <- nb %>% filter(elements == canon$elements)
+# See https://gitlab.inria.fr/simgrid/simgrid/-/blob/f734ec7475682eb90323e804cbcfddd7e4523992/src/smpi/colls/allreduce/allreduce-smp-rsag-rab.cpp
+cat(sprintf("smp_rsag_lr appears (not documented) to only work with power-two number of ranks\n"))
+cat(sprintf("smp_rsag_rab only works (documented) with power-two number of ranks\n"))
+
+# Filter out the ones that didn't converge and smp_rsag_lr
+nbf <- nbnon %>%
 	filter(cg_residual < canon$max_residual) %>%
 	filter(algo != "smp_rsag_lr")
 
-# See https://gitlab.inria.fr/simgrid/simgrid/-/blob/f734ec7475682eb90323e804cbcfddd7e4523992/src/smpi/colls/allreduce/allreduce-smp-rsag-rab.cpp
-cat(sprintf("smp_rsag_lr not working for simgrid\n"))
-cat(sprintf("smp_rsag_rab only works with power-two number of processors\n"))
-
+# Filter by where the residuals differ (across different trials)
 filter_nbf <- function (df, topo, filter_algos = c(), min_trials = NULL) {
 	nbt <- df %>%
 		filter(!(algo %in% filter_algos)) %>%

@@ -72,5 +72,5 @@ for (x in c("unif01", "unif11", "unif1000", "subn")) {
 		xlab("Maximum Reduction Tree Height") +
 		ylab("Relative Error")
 	ggsave(paste0("figures/rora-height-r",x,".pdf"),
-		plot = p, scale = 0.8, height = 5)
+		plot = p, scale = 0.9, height = 4)
 }

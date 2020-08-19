@@ -314,7 +314,8 @@ p <- ggplot(rbind(rola,rora), aes(x = error_mpfr, fill = order)) +
 		legend.text = element_text(size = 8)) +
 	ylab("Count") +
 	xlab(expression(sum[mpfr] - sum[double]))
-ggsave(paste0("figures/assoc-r",distr,"-hist-rola-rora.pdf"), plot = p, scale = 0.9, height = 4, width = 6)
+ggsave(paste0("figures/assoc-r",distr,"-hist-rola-rora.pdf"),
+	plot = p, scale = 0.9, height = 4, width = 6)
 
 # The two that look very similar
 vlines <- data.frame(
@@ -361,7 +362,8 @@ p <- ggplot(rbind(fora,rora), aes(x = abs(error_mpfr))) +
 		legend.text = element_text(size = 8)) +
 	ylab("Count") +
 	xlab("Absolute Error") # expression(paste("Error as |",sum[mpfr] - sum[double],"|")))
-ggsave(paste0("figures/assoc-r",distr,"-hist-fora-rora-abs.pdf"), plot = p, height = 4, width = 6)
+ggsave(paste0("figures/assoc-r",distr,"-hist-fora-rora-abs.pdf"),
+	plot = p, scale = 0.9, height = 4, width = 6)
 
 # Histogram for allr (separate) - I don't think this is informative
 binc <- sapply(list(allr), function(x) {length(unique(sort(x$error_mpfr)))})
@@ -413,6 +415,7 @@ fn <- paste0(base_dir,"assoc-r",distr4,"-big.tsv")
 l4 <- get_distribution_data(fn)
 stopifnot(l1$veclen == l2$veclen, l2$veclen == l3$veclen)
 
+red_type <- "RORA"
 d1 <- l1$rora
 d2 <- l2$rora
 d3 <- l3$rora
@@ -454,7 +457,7 @@ p <- ggplot(rbind(d1,d2,d3,d4), aes(x = relative_error)) +
 	scale_color_manual(name = "Lines", values = vlines$Color,
 		labels = Labels) +
 	guides(fill = guide_legend(override.aes = list(linetype = 0))) +
-	labs(title = "Summation Error for Different Distributions",
+	labs(title = paste(red_type, "Summation Error for Different Distributions"),
 		caption = bquote(n == .(format(nrow(d1),big.mark=","))*"," ~~~
 						 "|A|" == .(format(l1$veclen, big.mark=",")))) +
 	theme(legend.title = element_blank(),
