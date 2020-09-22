@@ -16,11 +16,11 @@ TARGETS = assoc_test gen_random
 endif
 
 # Experiment Parameters
-EXP_DIR = experiments/with-height
+EXP_DIR = experiments/post-acceptance
 VECLEN = 14400
 VECLEN_BIG = 72000000
-RAND_TRIALS = 50000
-VECLEN_RAND = 100000
+RAND_TRIALS = 1000000
+VECLEN_RAND_QUICK = 100000
 VECLEN_RAND_BIG = 2000000
 RAND_TRIALS_DEEP = 5000000
 VECLEN_RAND_DEEP = 256
@@ -128,20 +128,20 @@ ompi: $(TARGETS)
 
 # Random associations (serial)
 assoc_quick : assoc_test
-	./assoc_test $(VECLEN_RAND) 10 runif[0,1]
-	./assoc_test $(VECLEN_RAND) 10 runif[-1,1]
-	./assoc_test $(VECLEN_RAND) 10 runif[-1000,1000]
-	./assoc_test $(VECLEN_RAND) 10 rsubn
+	./assoc_test $(VECLEN_RAND_QUICK) 10 runif[0,1]
+	./assoc_test $(VECLEN_RAND_QUICK) 10 runif[-1,1]
+	./assoc_test $(VECLEN_RAND_QUICK) 10 runif[-1000,1000]
+	./assoc_test $(VECLEN_RAND_QUICK) 10 rsubn
 
 assoc : assoc_test assoc01 assoc11 assoc1000 assocrsubn
 assoc01: assoc_test
-	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[0,1]        > $(EXP_DIR)/assoc-runif01.tsv
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[0,1]        > $(EXP_DIR)/assoc-runif01.tsv
 assoc11: assoc_test
-	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[-1,1]       > $(EXP_DIR)/assoc-runif11.tsv
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[-1,1]       > $(EXP_DIR)/assoc-runif11.tsv
 assoc1000: assoc_test
-	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) runif[-1000,1000] > $(EXP_DIR)/assoc-runif1000.tsv
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) runif[-1000,1000] > $(EXP_DIR)/assoc-runif1000.tsv
 assocrsubn: assoc_test
-	./assoc_test $(VECLEN_RAND) $(RAND_TRIALS) rsubn             > $(EXP_DIR)/assoc-rsubn.tsv
+	./assoc_test $(VECLEN_RAND_BIG) $(RAND_TRIALS) rsubn             > $(EXP_DIR)/assoc-rsubn.tsv
 
 assoc_big : assoc_test assoc01_big assoc11_big assoc1000_big assocrsubn_big
 assoc01_big: assoc_test
