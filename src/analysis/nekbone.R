@@ -43,7 +43,7 @@ nbf <- nbconverged %>% filter(algo != "smp_rsag_lr")
 filter_nbf <- function (df, topo, filter_algos = c(), min_trials = NULL) {
 	nbt <- df %>%
 		filter(!(algo %in% filter_algos)) %>%
-		filter(topology == topo)
+		filter(topology %in% topo)
 	def_res_nbt <- min(filter(nbt, algo == 'default')$cg_residual)
 	nbt$difference <- nbt$cg_residual - def_res_nbt
 	# Get the number of trials. To be conservative, count the minimum for each
@@ -75,12 +75,12 @@ min_trials <- 69 #
 # Single out one topology. Filter out smp_rsag by default because it makes
 # other points all look the same, even with a log scale.
 filter_algos <- c('smp_rsag')
-nbt <- filter_nbf(nbf, nbt_topo, filter_algos = filter_algos, min_trials = min_trials)
+nbt <- filter_nbf(nbf, c(nbt_topo), filter_algos = filter_algos, min_trials = min_trials)
 min_res_nbt <- min(nbt$cg_residual) # This is kind of arbitrary when you just remove smp_rsag
 def_res_nbt <- min(filter(nbt, algo == 'default')$cg_residual)
 
 # Also get the value of the outlier and how much it's different from 'default'
-nbt_all_algos <- filter_nbf(nbconverged, nbt_topo, filter_algos = c(), min_trials = min_trials)
+nbt_all_algos <- filter_nbf(nbconverged, c(nbt_topo), filter_algos = c(), min_trials = min_trials)
 min_filter_algo_res <- min(filter(nbt_all_algos, algo %in% filter_algos)$cg_residual) - def_res_nbt
 
 # Here's a weird result. The later experiments are more consistent. If we do
@@ -136,9 +136,25 @@ cat(paste("minimum trials =", min_trials, "\n"))
 cat(paste("elements =", format(canon$elements,big.mark=","),
 		                "\ntoplogy =", nbt_topo, "\n"))
 
+# Some other data I used when qualifying the paper
+all_topos <- c("fattree-72","fattree-16","torus-2-2-4","torus-2-4-9", "native-16", "native-36")
+nbf_all <- filter_nbf(nbf, all_topos, min_trials = min_trials)
+best_res <- nbf_all %>%
+	group_by(NP, topology, algo) %>%
+	summarize(best = min(cg_residual)) %>%
+	arrange(best) %>% as.data.frame()
+unique_res <- nbf_all %>%
+	group_by(NP, topology) %>%
+	summarize(unique(cg_residual))
+res_72 <- unique_res %>% filter(topology == 'fattree-72')
+cat("Unique results for fattree-72:", as.character(res_72$"unique(cg_residual)"), "\n")
+cat("Num unique experiments",
+	nbf_all %>% group_by(NP, topology, algo) %>% summarize(n_distinct(NP, topology, algo)) %>% nrow(),
+	"\n")
+
 # Now, include the extra low-residual results (smp_rsag)
 special <- "smp_rsag"
-nbt_all <- filter_nbf(nbf, nbt_topo, min_trials = min_trials)
+nbt_all <- filter_nbf(nbf, c(nbt_topo), min_trials = min_trials)
 cat(paste('unique results =', length(unique(nbt_all$cg_residual)), "\n"))
 
 nba <- nbt_all %>%
