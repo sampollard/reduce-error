@@ -3,6 +3,7 @@
 library(dplyr)
 library(ggplot2)
 library(viridis)
+library(Cairo)
 
 # Some magic numb--err... constants
 canon <- list(
@@ -35,17 +36,16 @@ cat(sprintf("smp_rsag_lr appears (not documented) to only work with power-two nu
 cat(sprintf("smp_rsag_rab only works (documented) with power-two number of ranks\n"))
 
 # Filter out the ones that didn't converge and smp_rsag_lr
-nbf <- nbnon %>%
-	filter(cg_residual < canon$max_residual) %>%
-	filter(algo != "smp_rsag_lr")
+nbconverged <- nbnon %>% filter(cg_residual < canon$max_residual)
+nbf <- nbconverged %>% filter(algo != "smp_rsag_lr")
 
 # Filter by where the residuals differ (across different trials)
 filter_nbf <- function (df, topo, filter_algos = c(), min_trials = NULL) {
 	nbt <- df %>%
 		filter(!(algo %in% filter_algos)) %>%
 		filter(topology == topo)
-	min_res_nbt <- min(nbt$cg_residual)
-	nbt$difference <- nbt$cg_residual - min_res_nbt
+	def_res_nbt <- min(filter(nbt, algo == 'default')$cg_residual)
+	nbt$difference <- nbt$cg_residual - def_res_nbt
 	# Get the number of trials. To be conservative, count the minimum for each
 	# experiment, where an experiment is each triple of (NP, topology, algo)
 	if (is.null(min_trials)) {
@@ -74,28 +74,45 @@ min_trials <- 69 #
 
 # Single out one topology. Filter out smp_rsag by default because it makes
 # other points all look the same, even with a log scale.
-nbt <- filter_nbf(nbf, nbt_topo, filter_algos = c("smp_rsag"), min_trials = min_trials)
-min_res_nbt <- min(nbt$cg_residual)
+filter_algos <- c('smp_rsag')
+nbt <- filter_nbf(nbf, nbt_topo, filter_algos = filter_algos, min_trials = min_trials)
+min_res_nbt <- min(nbt$cg_residual) # This is kind of arbitrary when you just remove smp_rsag
+def_res_nbt <- min(filter(nbt, algo == 'default')$cg_residual)
+
+# Also get the value of the outlier and how much it's different from 'default'
+nbt_all_algos <- filter_nbf(nbconverged, nbt_topo, filter_algos = c(), min_trials = min_trials)
+min_filter_algo_res <- min(filter(nbt_all_algos, algo %in% filter_algos)$cg_residual) - def_res_nbt
 
 # Here's a weird result. The later experiments are more consistent. If we do
 # nbt <- nbt %>% filter(trial <= min_trials, trial > 25, .preserve = TRUE)
 # and then plot, they are all the same result.
+# UPDATE: This goes away when the earlier experiments were deleted. I think it
+# was an artifact of sloppy cleaning between experiment modification
 
-# We subtract from the minimum to get the y-axis to have a reasonable scale
+#####################################################################
+###            Plot used in Correctness 2020 Paper                ###
+#####################################################################
+# We subtract from the default allreduce to get the y-axis to have a reasonable scale
 # scale_y_continuous(limits = range(nbt$cg_residual))  seems not to work
 p <- ggplot(nbt, aes(x = algo, y = difference, group = difference)) +
 	geom_bar(stat = "identity", color = "black", position = "dodge", fill = canon$fill_color) +
-	geom_text(aes(label = count),
-		position = position_dodge(0.9), vjust = -0.7, size = 3,
-		check_overlap = TRUE) +
+	# The numbers above the bars just confuse people since they are all the same
+	# (the non-reproducibility I originally observed went away when I was more careful with
+	# how and where I ran experiments)
+	# geom_text(aes(label = count),
+	# 	position = position_dodge(0.9), vjust = -0.7, size = 3,
+	# 	check_overlap = TRUE) +
 	theme(axis.text.x = element_text(angle = 30, hjust = 1, size = 10)) +
-	labs(title = paste("Unique Results for Nekbone on a", topo_pp(nbt_topo))) +
+	labs(title = paste("Unique Results for Nekbone on a", topo_pp(nbt_topo)),
+		tag = sprintf("\u2B33  smp_rsag = %0.2e", min_filter_algo_res)) +
+	theme(plot.tag = element_text(angle = 90, size = 10),
+		plot.tag.position = "right") +
 	scale_y_continuous(
 		limits = c(0, max(nbt$difference)*1.1), # Make room for the counts
 		labels = function(x) sprintf("%0.2e", x),
 		breaks = seq(min(nbt$difference), max(nbt$difference), length.out = 6)) +
 	xlab("Allreduce Algorithm") +
-	ylab("Difference from Smallest Residual")
+	ylab("Difference from Default Residual")
 # Add in a scale for machine epsilon. This feels a little hacky.
 left_edge <- ggplot_build(p)$layout$panel_params[[1]]$x.range[1]
 top_edge <- ggplot_build(p)$layout$panel_params[[1]]$y.range[2]
@@ -111,7 +128,8 @@ p <- p +
 		y = top_edge*0.9 + 0.8 * (min_res_nbt - next_dbl(min_res_nbt)),
 		label = "= gap between doubles",
 		size = 3, vjust = 0, hjust = "left")
-ggsave(paste0("figures/nekbone-trials.pdf"), plot = p, scale = 0.85, height = 5, width = 7)
+ggsave(paste0("figures/nekbone-trials.pdf"), device=cairo_pdf, plot = p,
+	scale = 0.85, height = 5, width = 7)
 
 # These are nice to have, but too verbose for the figure.
 cat(paste("minimum trials =", min_trials, "\n"))
@@ -121,6 +139,8 @@ cat(paste("elements =", format(canon$elements,big.mark=","),
 # Now, include the extra low-residual results (smp_rsag)
 special <- "smp_rsag"
 nbt_all <- filter_nbf(nbf, nbt_topo, min_trials = min_trials)
+cat(paste('unique results =', length(unique(nbt_all$cg_residual)), "\n"))
+
 nba <- nbt_all %>%
 	group_by(topology, algo) %>%
 	distinct(cg_residual)
