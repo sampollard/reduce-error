@@ -18,7 +18,6 @@ read_mpfr <- function(fn) {
 read_experiment <- function(fn, fields = c("order","fp_a")) {
 	df <- read.table(file = fn, sep = "\t", header = TRUE)
 	stopifnot(all(df$veclen == df$veclen[1]))
-	veclen <- df$veclen[1]
 	# Filter and get more R-friendly
 	colnames(df)[colnames(df) == "FP..decimal."] <- "fp_decimal"
 	colnames(df)[colnames(df) == "FP...a."] <- "fp_a"
@@ -63,14 +62,17 @@ for (x in c("unif01", "unif11", "unif1000", "subn")) {
 	p <- ggplot(rora, aes(y = relative_error, x = height)) +
 		geom_point(shape = "square", size = 0.5) +
 		#geom_bin2d(bins = 20) +
-		geom_smooth(method = "lm") +
+		geom_smooth(method = "lm", formula = y ~ x, color = "blue") +
 		labs(title = paste("Reduction Tree Height with RORA and", distr_pp(x)),
-		     caption = sprintf("cor = %.3f, n = %s", rho, format(nrow(rora), big.mark=","))) +
+		     caption = sprintf("cor = %0.3f\nn = %s, |A| = %s", rho,
+		                       format(nrow(rora), big.mark=","),
+			                   format(veclen, big.mark=","))) +
 		scale_y_continuous(
 			breaks = seq(0, max(rora$relative_error), length.out = 4),
 			labels = function(x) sprintf("%0.1e", x)) +
+		# Add in a legend just for the correlation coefficient
 		xlab("Maximum Reduction Tree Height") +
 		ylab("Relative Error")
 	ggsave(paste0("figures/rora-height-r",x,".pdf"),
-		plot = p, scale = 0.9, height = 4)
+		plot = p, scale = 0.9, height = 3.5, width = 7)
 }
