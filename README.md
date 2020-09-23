@@ -3,9 +3,8 @@
 ## Dependencies
 - [SimGrid](https://github.com/simgrid/simgrid) - preferably most recent git
   version. SimGrid requires cmake if building from source.
-- Boost. This was built with Boost 1.72.0. The path should be in your
-  `CPLUS_INCLUDE_PATH`. I did this by installing via spack then executing
-  `module load boost-1.<tab complete>`. The important thing is you have
+- Boost. The path should be in your `CPLUS_INCLUDE_PATH`. I did this by
+  installing via spack then executing `module load boost-1.<tab complete>`.
 - [MPFR](https://www.mpfr.org/) - this is needed for Boost's multiprecision C++
   interface. I installed via spack then `module load mpfr-<tab complete>`
 
@@ -33,9 +32,10 @@ Versions of software:
 - Boost 1.72.0
 - Simgrid 3.25.1, or commit hash 4b7251c4ac80f95f82ac25ecfb3a9f618150cb11
 - GCC 7.5.0 and OpenMPI 4.0.3 on the single-node
-- GCC 7/3 and OpenMPI 2.1 on the multi-node cluster (talapas)
+- GCC 7.3.0 and OpenMPI 2.1 on the multi-node cluster (talapas @ UOregon)
+- MPFR 4.0.2
 
-Some of the directories here were not used to generate the results, but could be added in.
+Some of the directories here were not used to generate the results, but were used for comparison
 
 The three that are used in `./prep-nekbone.sh`:
 1. `openmpi`
@@ -44,6 +44,7 @@ The three that are used in `./prep-nekbone.sh`:
 
 This directory is used in `assoc.R`:
 1. `assoc`
+
 This is used in `height.R`:
 1. `with-height`
 
@@ -57,12 +58,14 @@ You can run `./prep-nekbone.sh` to generate nekbone.tsv.
 
 As far as regenerating experiments, this should do it:
 ```
-# inside `nekbone`
+# inside `nekbone` directory
 ./prep-nek-slurm.sh
 sbatch nekbone-batch.sh
 
 # This one will take a while. By default it only does 72-node (same as paper)
-# but you can also add in 16 and also uncomment the `torus-2-4-9` line
+# but you can also add in 16 and also uncomment the `torus-2-4-9` line. These
+# were used in the paper to invesigate why smp_rsag had an outlier but were not
+# plotted.
 ./run-nek.sh
 
 # inside `src`
@@ -71,6 +74,7 @@ USE_MPI=0 make gen_random
 
 # This one also takes a bit. Maybe an hour or two. You no longer need the
 # `with-height` directory since the updated assoc binary now prints that column
+# However, `height` takes longer so for large experiment numbers this is turned off.
 USE_MPI=0 make -j assoc
 ```
 

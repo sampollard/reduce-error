@@ -53,4 +53,19 @@ for f in $DIR/$PREFIX*.txt; do
 		 /nelt/ && e==0 {e=$NF}
 		 END {printf "%s\t%s\t%s\t%s\t%s\t%s\n", e, np, topo, a, t, r}' "$f" >> "$TSV"
 done
+
+# Simgrid smaller
+DIR="experiments/smp_rsag"
+PREFIX="log-"
+for f in $DIR/$PREFIX*.txt; do
+	fb=$(basename $f)
+	TOPO=$(echo $fb  | sed -E 's/log-(.*)-np([0-9]+)-(.+)-([0-9]+)-([0-9]+)\.txt/\1/g')
+	NP=$(echo $fb    | sed -E 's/log-(.*)-np([0-9]+)-(.+)-([0-9]+)-([0-9]+)\.txt/\2/g')
+	ALGO=$(echo $fb  | sed -E 's/log-(.*)-np([0-9]+)-(.+)-([0-9]+)-([0-9]+)\.txt/\3/g')
+	TRIAL=$(echo $fb | sed -E 's/log-(.*)-np([0-9]+)-(.+)-([0-9]+)-([0-9]+)\.txt/\5/g')
+	awk -v t=$TRIAL -v a=$ALGO -v np=$NP -v topo=$TOPO \
+		'/cg:/ && ++n == 2 {r=$3}
+		 /nelt/ && e==0 {e=$NF}
+		 END {printf "%s\t%s\t%s\t%s\t%s\t%s\n", e, np, topo, a, t, r}' "$f" >> "$TSV"
+done
 echo "done"
