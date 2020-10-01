@@ -1,7 +1,9 @@
 # Analyze Nekbone output.
 # First, using openmpi (easier), then using simgrid (more files)
 library(dplyr)
+options(dplyr.summarise.inform=F) # Remove "summarise() regrouping output" warning
 library(ggplot2)
+library(scales)
 library(viridis)
 library(Cairo)
 
@@ -70,23 +72,28 @@ filter_nbf <- function (df, topo, filter_algos = c(), min_trials = NULL) {
 
 nbt_topo <- "fattree-72"
 # Uh.... KISS. By the paper deadline I've done about 75 so choose that.
-min_trials <- 69 #
+min_trials <- 69
 
 # Single out one topology. Filter out smp_rsag by default because it makes
 # other points all look the same, even with a log scale.
-filter_algos <- c('smp_rsag')
+outlier_algo <- 'smp_rsag'
+#filter_algos <- c(outlier_algo) # Different choice to visualize: make a tag only
+filter_algos <- c() # Alternatively, just chop off so smp_rsag is "off the charts"
 nbt <- filter_nbf(nbf, c(nbt_topo), filter_algos = filter_algos, min_trials = min_trials)
-min_res_nbt <- min(nbt$cg_residual) # This is kind of arbitrary when you just remove smp_rsag
-def_res_nbt <- min(filter(nbt, algo == 'default')$cg_residual)
+min_res_nbt  <- min(filter(nbt, algo != outlier_algo)$cg_residual)
+min_diff_nbt <- min(filter(nbt, algo != outlier_algo)$difference)
+max_diff_nbt <- max(filter(nbt, algo != outlier_algo)$difference)
+min_res_all  <- min(nbt$cg_residual)
+def_res_nbt  <- min(filter(nbt, algo == 'default')$cg_residual)
 
 # Also get the value of the outlier and how much it's different from 'default'
 nbt_all_algos <- filter_nbf(nbconverged, c(nbt_topo), filter_algos = c(), min_trials = min_trials)
-min_filter_algo_res <- min(filter(nbt_all_algos, algo %in% filter_algos)$cg_residual) - def_res_nbt
+min_filter_algo_res <- min(filter(nbt_all_algos, algo == outlier_algo)$cg_residual) - def_res_nbt
 
 # Here's a weird result. The later experiments are more consistent. If we do
 # nbt <- nbt %>% filter(trial <= min_trials, trial > 25, .preserve = TRUE)
 # and then plot, they are all the same result.
-# UPDATE: This goes away when the earlier experiments were deleted. I think it
+# UPDATE (9/15/2020): This goes away when the earlier experiments were deleted. It
 # was an artifact of sloppy cleaning between experiment modification
 
 #####################################################################
@@ -94,8 +101,9 @@ min_filter_algo_res <- min(filter(nbt_all_algos, algo %in% filter_algos)$cg_resi
 #####################################################################
 # We subtract from the default allreduce to get the y-axis to have a reasonable scale
 # scale_y_continuous(limits = range(nbt$cg_residual))  seems not to work
-p <- ggplot(nbt, aes(x = algo, y = difference, group = difference)) +
-	geom_bar(stat = "identity", color = "black", position = "dodge", fill = canon$fill_color) +
+p <- ggplot(nbt, aes(x = algo, y = difference, group = difference,
+	                 fill = difference >= 0.0)) +
+	geom_bar(stat = "identity", color = "black", position = "dodge") + # canon$fill_color) +
 	# The numbers above the bars just confuse people since they are all the same
 	# (the non-reproducibility I originally observed went away when I was more careful with
 	# how and where I ran experiments)
@@ -103,18 +111,27 @@ p <- ggplot(nbt, aes(x = algo, y = difference, group = difference)) +
 	# 	position = position_dodge(0.9), vjust = -0.7, size = 3,
 	# 	check_overlap = TRUE) +
 	theme(axis.text.x = element_text(angle = 30, hjust = 1, size = 10)) +
+	guides(fill = FALSE) +
 	labs(title = paste("Unique Results for Nekbone on a", topo_pp(nbt_topo)),
-		tag = sprintf("\u2B33  smp_rsag = %0.2e", min_filter_algo_res)) +
-	theme(plot.tag = element_text(angle = 90, size = 10),
+		tag = sprintf("\u2B33 smp_rsag = %0.2e", min_filter_algo_res)) +
+	theme(plot.tag = element_text(angle = 90, size = 11),
 		plot.tag.position = "right") +
+	scale_fill_viridis_d(option = "plasma", begin = 0.4, end = 1, direction = -1) +
 	scale_y_continuous(
-		limits = c(0, max(nbt$difference)*1.1), # Make room for the counts
+		limits = c(-max_diff_nbt*0.25, max_diff_nbt*1.1), # Make room for the counts
 		labels = function(x) sprintf("%0.2e", x),
-		breaks = seq(min(nbt$difference), max(nbt$difference), length.out = 6)) +
+		breaks = seq(min_diff_nbt, max_diff_nbt, length.out = 6),
+		# Like oob_keep, but allows "zoom" to account for the lack of floating point precision
+		# at such small scales
+		oob = function(x, range = c(0,1)) {
+			oob_keep(ifelse(x < 0, -max_diff_nbt , x), range = range)
+		}) +
 	xlab("Allreduce Algorithm") +
 	ylab("Difference from Default Residual")
 # Add in a scale for machine epsilon. This feels a little hacky.
 left_edge <- ggplot_build(p)$layout$panel_params[[1]]$x.range[1]
+right_edge <- ggplot_build(p)$layout$panel_params[[1]]$x.range[2]
+bottom_edge <- ggplot_build(p)$layout$panel_params[[1]]$y.range[1]
 top_edge <- ggplot_build(p)$layout$panel_params[[1]]$y.range[2]
 p <- p +
 	geom_segment(
@@ -125,9 +142,15 @@ p <- p +
 		size = 1) +
 	annotate("text",
 		x = left_edge*1.4 + 0.15, # Can't use nudge_x for annotate
-		y = top_edge*0.9 + 0.8 * (min_res_nbt - next_dbl(min_res_nbt)),
+		y = top_edge*0.89 + 0.8 * (min_res_nbt - next_dbl(min_res_nbt)),
 		label = "= gap between doubles",
-		size = 3, vjust = 0, hjust = "left")
+		size = 3, vjust = 0, hjust = "left") +
+	# Add in an arrow to show the outlier extends beyond
+	annotate("text",
+		x = right_edge*0.975,
+		y = 0.0,
+		label = "\u2B33       ",
+		size = 4, vjust = 0, angle = 90, hjust = "right")
 ggsave(paste0("figures/nekbone-trials.pdf"), device=cairo_pdf, plot = p,
 	scale = 0.85, height = 5, width = 7)
 
@@ -151,6 +174,10 @@ cat("Unique results for fattree-72:", as.character(res_72$"unique(cg_residual)")
 cat("Num unique experiments",
 	nbf_all %>% group_by(NP, topology, algo) %>% summarize(n_distinct(NP, topology, algo)) %>% nrow(),
 	"\n")
+# Print results for Table III
+nbt_diffs <- nbt %>% group_by(algo) %>% summarize(res = min(cg_residual))
+cat(sprintf("%s &\t%s \\\\\n", gsub("_", "\\\\_", nbt_diffs$algo), nbt_diffs$res))
+
 
 # Now, include the extra low-residual results (smp_rsag)
 special <- "smp_rsag"
