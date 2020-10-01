@@ -196,6 +196,18 @@ nb_bi <- rbind(
 	nba %>% group_by(topology) %>%
 		filter(cg_residual == min(cg_residual)) %>% slice_head())
 format(as.data.frame(nb_bi), digits = 17)
+
+# Also print out for the non-simulated date
+message("Printing out default and talapas residuals")
+for (topo in c('native-16', 'native-36', 'talapas-16', 'torus-2-4-9')) {
+	nba <- nbf %>%
+		group_by(topology, algo) %>%
+		filter(topology == topo) %>%
+		distinct(cg_residual)
+	cat(paste('unique results =', length(unique(nba$cg_residual)), "\n"))
+	print(format(as.data.frame(nba), digits = 17))
+}
+
 # On second thought, this isn't so useful as a plot :(
 # min_res_all <- min(nbt_all$cg_residual)
 # p <- ggplot(nb_bi, aes(x = algo, y = cg_residual)) +
