@@ -170,7 +170,7 @@ unique_res <- nbf_all %>%
 	group_by(NP, topology) %>%
 	summarize(unique(cg_residual))
 res_72 <- unique_res %>% filter(topology == 'fattree-72')
-cat("Unique results for fattree-72:", as.character(res_72$"unique(cg_residual)"), "\n")
+cat("Unique results for fattree-72:", format(res_72$"unique(cg_residual)", digits=17), "\n")
 cat("Num unique experiments",
 	nbf_all %>% group_by(NP, topology, algo) %>% summarize(n_distinct(NP, topology, algo)) %>% nrow(),
 	"\n")

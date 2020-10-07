@@ -11,7 +11,7 @@ DBL_MIN <- 2.22507385850720138309e-308 # Machine Epsilon
 FLT_MIN <- 1.17549435e-38
 height <- 3
 EPS <- 2^-53
-ffmt = "%.3e"
+ffmt = "%.17e"
 base_dir <- 'experiments/assoc/'
 # Color Mappings:
 # A modified https://colorbrewer2.org/#type=qualitative&scheme=Dark2
@@ -130,7 +130,7 @@ mu_distr <- function(d) {
 }
 robertazzi_bound <- function(n, d) {
 	mu <- mu_distr(d)
-	return((1/3) * (mu/2)^2 * n^3 * EPS^2 * (1/12))
+	return((1/3) * (mu)^2 * n^3 * EPS^2 * (1/12))
 }
 
 #####################################################################
@@ -205,21 +205,29 @@ rora <- allr[allr$order == "Shuffle rand assoc",]
 cat(sprintf("*** %s ***\n", distr))
 cat(sprintf(paste0("min:\t",ffmt,"\nmax:\t",ffmt,"\ncanon:\t",ffmt,"\nmpfr:\t",ffmt,"\n"),
 	min(allr$fp_a), max(allr$fp_a), canonical, mpfr_1000))
-cat(sprintf(paste0("abs error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
+cat(sprintf(paste0("mean abs error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\ncanon:\t",ffmt,"\n"),
 	mean(abs(fora$error_mpfr)),
 	mean(abs(rola$error_mpfr)),
-	mean(abs(rora$error_mpfr))))
+	mean(abs(rora$error_mpfr)),
+	mean(abs(canonical-mpfr_1000))))
+cat(sprintf(paste0("max abs error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\ncanon:\t",ffmt,"\n"),
+	max(abs(fora$error_mpfr)),
+	max(abs(rola$error_mpfr)),
+	max(abs(rora$error_mpfr)),
+	max(abs(canonical-mpfr_1000))))
 cat(sprintf(paste0("analy:\t",ffmt,"\n"), analytical_abs_bound(veclen, distr)))
-cat(sprintf(paste0("mean rel error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
+cat(sprintf(paste0("mean rel error:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\ncanon:\t",ffmt,"\n"),
 	mean(rel_err(fora,mpfr_1000)),
 	mean(rel_err(rola,mpfr_1000)),
-	mean(rel_err(rora,mpfr_1000))))
+	mean(rel_err(rora,mpfr_1000)),
+	mean(abs((canonical-mpfr_1000)/mpfr_1000))))
 cat(sprintf(paste0("max rel:\nfora:\t",ffmt,"\nrola:\t",ffmt,"\nrora:\t",ffmt,"\n"),
 	max(rel_err(fora,mpfr_1000)),
 	max(rel_err(rola,mpfr_1000)),
 	max(rel_err(rora,mpfr_1000))))
 cat(sprintf(paste0("sla:\t",ffmt,"\n"), abs((canonical-mpfr_1000)/mpfr_1000)))
-cat(sprintf(paste0("analy:\t",ffmt,"\n"), abs(analytical_abs_bound(veclen, x)/mpfr_1000)))
+cat(sprintf(paste0("analy:\t",ffmt,"\n"), abs(analytical_abs_bound(veclen, distr)/mpfr_1000)))
+cat(sprintf(paste0("rober:\t",ffmt,"\n"), robertazzi_bound(veclen, distr)))
 cat(sprintf("Unique:\nfora:\t%d\nrola:\t%d\nrora:\t%d\n",
 	length(unique(fora$error_mpfr)), length(unique(rola$error_mpfr)), length(unique(rora$error_mpfr))))
 cat(sprintf("Nonidentical (fora - rora): %d\n", length(intersect(fora$error_mpfr, rora$error_mpfr))))
