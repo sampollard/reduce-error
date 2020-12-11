@@ -4,21 +4,23 @@
 // Make parameterized by n
 // Algorithm P from Knuth
 object Gen {
-  val n: Int = 4
-  val varnames: Array[String] = Array("x1","x2","x3")
-
   val lb: Double = -1.0
   val ub: Double = 1.0
 
-  val rangelb = varnames.mkString("", s">=$lb && ", s">=$lb")
-  val rangeub = varnames.mkString("", s"<=$ub && ", s"<=$lb")
-  val arglist = varnames.mkString("",": Real, ",": Real")
-  val definition = s"def sum_NAME($arglist): Real = {"
-  val precondition = s"require($rangelb && $rangeub)"
-  val expr = varnames.mkString("+")
+  def l_assoc(n: Int): String = {
+    val varnames = (1 to n).map((i: Int) => "x" + i.toString)
+    val rangelb = varnames.mkString("", s" >= $lb && ", s" >= $lb")
+    val rangeub = varnames.mkString("", s" <= $ub && ", s" <= $ub")
+    val arglist = varnames.mkString("",": Real, ",": Real")
+    val definition = s"def sum_${n}_l($arglist): Real = {"
+    val precondition = s"require($rangelb &&\n$rangeub)"
+    val expr = varnames.mkString("+")
+    definition + "\n\t" + precondition + "\n\t" + expr + "\n}"
+  }
 
   def main(args: Array[String]): Unit = {
-    println(definition + "\n\t" + precondition + "\n\t" + expr + "\n}")
+    val s: String = l_assoc(args(0).toInt)
+    println(s)
   }
 }
 
