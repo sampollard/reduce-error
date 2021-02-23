@@ -17,9 +17,8 @@
  *    a     b     c
  */
 #define USAGE (\
-	"mpirun -np <N> ./assoc_mpi <len> <distr> <topology> <algorithm>\n"\
-    "<len> is size of the vector being reduced. mod(N,len) must be 0\n"\
-	"<iters> are the number of iterations to run\n"\
+	"mpirun -np <N> ./dotprod_mpi <len> <distr> <topology> <algorithm>\n"\
+	"<len> is size of the vector being reduced. mod(N,len) must be 0\n"\
 	"<distr> is the distribution to use. Choices are:\n"\
 	"\trunif[0,1] runif[-1,1] runif[-1000,1000] rsubn\n"\
 	"<topology> is a string for logging, best used with SimGrid\n"\
@@ -72,7 +71,10 @@ int main (int argc, char* argv[])
 
 	/* Parse arguments */
 	if (argc != 5) {
-		if (taskid == 0) fprintf(stderr, USAGE);
+		if (taskid == 0) {
+			fprintf(stderr, "Expected 4 arguments, found %d\n", argc-1);
+			fprintf(stderr, USAGE);
+		}
 		rc = 1;
 		goto done;
 	}
@@ -114,6 +116,7 @@ int main (int argc, char* argv[])
 		if (taskid == 0) {
 			fprintf(stderr, "Could not create MPI op noncommutative sum\n");
 		}
+		rc = 1;
 		goto done;
 	}
 

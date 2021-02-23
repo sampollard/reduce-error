@@ -17,7 +17,6 @@ endif
 
 # Experiment Parameters
 EXP_DIR = experiments/post-acceptance
-VECLEN = 14400
 VECLEN_BIG = 72000000
 RAND_TRIALS = 1000000
 VECLEN_RAND_QUICK = 100000
@@ -28,14 +27,7 @@ VECLEN_RAND_DEEP = 256
 # SimGrid options
 #LOG_LEVEL = --log=smpi_colls.threshold:debug
 LOG_LEVEL = --log=root.thres:critical
-# 3 Gflops. See notes.md for explanation.
-FLOPS = 3000000000f
-MPI_REDUCE_ALGOS = default ompi mpich mvapich2 impi automatic \
-	arrival_pattern_aware binomial flat_tree NTSL scatter_gather ompi_chain \
-	ompi_pipeline ompi_binary ompi_in_order_binary ompi_binomial \
-	ompi_basic_linear mvapich2_knomial mvapich2_two_level rab
 TOPOLOGY_16 = fattree-16 torus-2-2-4
-TOPOLOGY_72 = fattree-72 torus-2-4-9
 LDFLAGS += -L$${HOME}/.local/simgrid/lib -Wl,-rpath=$${HOME}/.local/simgrid/lib
 LIBS += -lmpfr -lgmp
 
@@ -49,7 +41,6 @@ VERBOSITY = coll_base_verbose 0
 # Shouldn't need to change
 OBJECTS = $(EXTRA_SOURCES:.cxx=.o)
 TARGET_OBJS = $(TARGETS:=.o)
-TOPO_DIR = ../topologies
 
 all : $(TARGETS)
 
@@ -88,35 +79,6 @@ OMPI_ALGOS = 0 1 2 3 4 5 6 7
 # 7:"rabenseifner"
 
 .PHONY : quick sim ompi clean differ assoc assoc_quick assoc_big assoc_deep
-quick : $(TARGETS)
-	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-16.txt -platform $(TOPO_DIR)/fattree-16.xml -np 16 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-16 auto
-	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-72.txt -platform $(TOPO_DIR)/fattree-72.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) fattree-72 auto
-	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-72.txt -platform $(TOPO_DIR)/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-4-9 auto
-	smpirun -hostfile $(TOPO_DIR)/hostfile-fattree-16.txt -platform $(TOPO_DIR)/torus-2-2-4.xml -np 4 --cfg=smpi/host-speed:$(FLOPS) --cfg=smpi/reduce:ompi ./dotprod_mpi $(VECLEN) torus-2-2-4 auto
-
-sim : $(TARGETS)
-	$(foreach algo,$(MPI_REDUCE_ALGOS), \
-		$(foreach topo,$(TOPOLOGY_16), \
-			smpirun -hostfile $(TOPO_DIR)/hostfile-$(topo).txt -platform $(TOPO_DIR)/$(topo).xml \
-				-np 16 \
-				--cfg=smpi/host-speed:$(FLOPS) \
-				--cfg=smpi/reduce:$(algo) \
-				$(LOG_LEVEL) \
-				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo); \
-		) \
-		$(foreach topo,$(TOPOLOGY_72), \
-			smpirun -hostfile $(TOPO_DIR)/hostfile-$(topo).txt -platform $(TOPO_DIR)/$(topo).xml \
-				-np 72 \
-				--cfg=smpi/host-speed:$(FLOPS) \
-				--cfg=smpi/reduce:$(algo) \
-				$(LOG_LEVEL) \
-				./dotprod_mpi $(VECLEN_BIG) $(topo) $(algo); \
-		) \
-	)
-
-# Potential bug in SimGrid
-differ : dotprod_mpi
-	smpirun -hostfile $(TOPO_DIR)/hostfile-torus-2-4-9.txt -platform $(TOPO_DIR)/torus-2-4-9.xml -np 72 --cfg=smpi/host-speed:3000000000f --cfg=smpi/reduce:mvapich2_knomial --log=root.thres:critical ./dotprod_mpi 720 torus-2-4-9 mvapich2_knomial
 
 # OpenMPI command line arguments
 ompi: $(TARGETS)
@@ -165,6 +127,15 @@ assocrsubn_deep: assoc_test
 
 clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
+
+# Simgrid targets
+sim : dotprod_mpi
+	$(MAKE) -f simgrid.mk sim
+
+export USE_MPI MPICXX
+quick : dotprod_mpi
+	$(MAKE) -f simgrid.mk quick
+
 
 # Dependency lists
 assoc.o : assoc.hxx
