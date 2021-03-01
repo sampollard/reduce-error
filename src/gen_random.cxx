@@ -12,10 +12,13 @@
                "<distr> is the distribution to use. Choices are:\n"\
                "\trunif[0,1] runif[-1,1] runif[-1000,1000] rsubn\n")
 
+#define FLOAT_T double
+
 int main (int argc, char* argv[])
 {
 	double (*rand_flt)(); // Function to generate a random float
 	long long len, i;
+	int rc = 0;
 
 	if (argc != 3) {
 		fprintf(stderr, "Wrong argc\n%s", USAGE);
@@ -27,16 +30,9 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 	std::string dist = argv[2];
-	if (dist == "runif[0,1]") {
-		rand_flt = &unif_rand_R;
-	} else if (dist == "runif[-1,1]") {
-		rand_flt = &unif_rand_R1;
-	} else if (dist == "runif[-1000,1000]") {
-		rand_flt = &unif_rand_R1000;
-	} else if (dist == "rsubn") {
-		rand_flt = &subnormal_rand;
-	} else {
-		fprintf(stderr, "Unrecognized distribution:\n%s",USAGE);
+	rc = parse_distr<FLOAT_T>(dist, &rand_flt);
+	if (rc != 0) {
+		fprintf(stderr, "Unrecognized distribution:\n%s", USAGE);
 		return 1;
 	}
 	set_seed(ASSOC_SEED, 0);

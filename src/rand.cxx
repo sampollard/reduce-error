@@ -20,6 +20,8 @@
 #ifndef RAND_CXX
 #define RAND_CXX
 
+#include <string>
+
 /* A version of Marsaglia-MultiCarry */
 
 static unsigned int I1=1234, I2=5678;
@@ -74,4 +76,27 @@ double unif_rand_R1000()
 {
 	return 2000 * (unif_rand_R() - 0.5);
 }
+
+template <typename FLOAT_T>
+int parse_distr(std::string description, FLOAT_T (**distr)())
+{
+	if (description == "runif[0,1]") {
+		*distr = &unif_rand_R;
+	} else if (description == "runif[-1,1]") {
+		*distr = &unif_rand_R1;
+	} else if (description == "runif[-1000,1000]") {
+		*distr = &unif_rand_R1000;
+	} else if (description == "rsubn") {
+		*distr = &subnormal_rand;
+	} else {
+		return 1;
+	}
+	return 0;
+}
+
+/* Explicit template instantiation. */
+// float currently not supported.
+// template int parse_distr(std::string description, float (**distr)());
+template int parse_distr(std::string description, double (**distr)());
+
 #endif

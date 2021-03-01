@@ -73,15 +73,8 @@ int main (int argc, char* argv[])
 	}
 	/* Select distribution for random floating point numbers */
 	std::string dist = argv[3];
-	if (dist == "runif[0,1]") {
-		rand_flt = &unif_rand_R;
-	} else if (dist == "runif[-1,1]") {
-		rand_flt = &unif_rand_R1;
-	} else if (dist == "runif[-1000,1000]") {
-		rand_flt = &unif_rand_R1000;
-	} else if (dist == "rsubn") {
-		rand_flt = &subnormal_rand;
-	} else {
+	rc = parse_distr<FLOAT_T>(dist, &rand_flt);
+	if (rc != 0) {
 		fprintf(stderr, "Unrecognized distribution:\n%s", USAGE);
 		return 1;
 	}

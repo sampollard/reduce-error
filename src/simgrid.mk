@@ -1,14 +1,17 @@
 # Makefile for running SMPI (simgrid) versions of experiments
 ifeq ($(USE_MPI), 0)
-$(error "make clean, then rerun with USE_MPI=1 SMPICXX=smpicxx make")
+$(error "make clean, then rerun with USE_MPI=1 MPICXX=smpicxx make")
 endif
 
 ifneq ($(MPICXX), smpicxx)
-$(error "make clean, then rerun with USE_MPI=1 SMPICXX=smpicxx make")
+$(error "make clean, then rerun with USE_MPI=1 MPICXX=smpicxx make")
 endif
 
 # 3 Gflops. See notes.md for explanation.
 FLOPS = 3000000000f
+
+#LOG_LEVEL = --log=smpi_colls.threshold:debug
+LOG_LEVEL = --log=root.thres:critical
 
 VECLEN = 14400
 TOPO_DIR = ../topologies

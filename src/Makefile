@@ -4,8 +4,16 @@
 
 USE_MPI ?= 1
 # Make sure to recompile before switching between simgrid and other MPI
-MPICXX = smpicxx
+MPICXX ?= smpicxx
 #MPICXX = mpicxx
+
+# Experiment Parameters
+EXP_DIR = experiments/post-acceptance
+RAND_TRIALS = 1000000
+VECLEN_RAND_QUICK = 100000
+VECLEN_RAND_BIG = 2000000
+RAND_TRIALS_DEEP = 5000000
+VECLEN_RAND_DEEP = 256
 
 EXTRA_SOURCES = assoc.cxx mpi_op.cxx rand.cxx
 HEADERS = assoc.hxx mpi_op.hxx rand.hxx util.hxx
@@ -15,28 +23,10 @@ else
 TARGETS = assoc_test gen_random
 endif
 
-# Experiment Parameters
-EXP_DIR = experiments/post-acceptance
-VECLEN_BIG = 72000000
-RAND_TRIALS = 1000000
-VECLEN_RAND_QUICK = 100000
-VECLEN_RAND_BIG = 2000000
-RAND_TRIALS_DEEP = 5000000
-VECLEN_RAND_DEEP = 256
-
 # SimGrid options
-#LOG_LEVEL = --log=smpi_colls.threshold:debug
-LOG_LEVEL = --log=root.thres:critical
-TOPOLOGY_16 = fattree-16 torus-2-2-4
 LDFLAGS += -L$${HOME}/.local/simgrid/lib -Wl,-rpath=$${HOME}/.local/simgrid/lib
 LIBS += -lmpfr -lgmp
-
 CXXFLAGS += -Wall -g
-
-# MPI and MPI Modular Component Architecture commands (OpenMPI). Currently Unused
-NUM_PROCS_LOCAL = 16 # For running on the system MPI; simgrid runs use other process counts
-VERBOSITY = coll_base_verbose 0
-#VERBOSITY = coll_base_verbose 40
 
 # Shouldn't need to change
 OBJECTS = $(EXTRA_SOURCES:.cxx=.o)
@@ -67,27 +57,9 @@ gen_random : gen_random.o rand.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 endif
 
-# OpenMPI MPI_Reduce Algorithms
-OMPI_ALGOS = 0 1 2 3 4 5 6 7
-# 0:"ignore"
-# 1:"linear"
-# 2:"chain"
-# 3:"pipeline"
-# 4:"binary"
-# 5:"binomial"
-# 6:"in-order_binary"
-# 7:"rabenseifner"
-
 .PHONY : quick sim ompi clean differ assoc assoc_quick assoc_big assoc_deep
 
-# OpenMPI command line arguments
-ompi: $(TARGETS)
-	$(foreach algo,$(OMPI_ALGOS),\
-		echo Reduction algorithm $(algo) ; \
-		mpirun -np $(NUM_PROCS_LOCAL) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./mpi_pi_reduce;)
-	$(foreach algo,$(OMPI_ALGOS),\
-		mpirun -np $(NUM_PROCS_LOCAL) --mca $(VERBOSITY) --mca coll_tuned_reduce_algorithm $(algo) ./dotprod_mpi $(VECLEN_BIG) native $(algo);)
-
+# Associativity experiments
 # Random associations (serial)
 assoc_quick : assoc_test
 	./assoc_test $(VECLEN_RAND_QUICK) 10 runif[0,1]
@@ -125,17 +97,20 @@ assoc1000_deep: assoc_test
 assocrsubn_deep: assoc_test
 	./assoc_test $(VECLEN_RAND_DEEP) $(RAND_TRIALS_DEEP) rsubn             > $(EXP_DIR)/assoc-rsubn-deep.tsv
 
-clean :
-	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
-
-# Simgrid targets
+# Simgrid experiments
+export USE_MPI MPICXX
 sim : dotprod_mpi
 	$(MAKE) -f simgrid.mk sim
 
-export USE_MPI MPICXX
 quick : dotprod_mpi
 	$(MAKE) -f simgrid.mk quick
 
+# OpenMPI experiments
+ompi : mpi_pi_reduce dotprod_mpi
+	$(MAKE) -f openmpi.mk ompi
+
+clean :
+	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
 
 # Dependency lists
 assoc.o : assoc.hxx
@@ -145,3 +120,4 @@ gen_random.o : rand.hxx
 mpi_op.o : mpi_op.hxx
 mpi_pi_reduce.o : rand.hxx
 rand.o : rand.hxx
+

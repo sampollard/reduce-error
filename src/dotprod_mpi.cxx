@@ -5,7 +5,7 @@
 * on doing a dot product in OpenMP and MPI by Blaise Barney. It has since
 * morphed to be more generic MPI operations
 * SOURCE: Blaise Barney
-* LAST REVISED: 8/14/20 - Samuel Pollard
+* LAST REVISED: 3/01/21	- Samuel Pollard
 ******************************************************************************/
 /* associative_accumulate_rand generates a random tree, then sums the elements in that order
  * For example,
@@ -29,6 +29,7 @@
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <boost/multiprecision/mpfr.hpp>
 
 #include "rand.hxx"
 #include "assoc.hxx"
@@ -53,7 +54,7 @@ int main (int argc, char* argv[])
 	long i, j, chunk, rc=0;
 	long long len, height;
 	MPI_Op nc_sum_op;
-	std::string dist, topo, algo;
+	std::string distr, topo, algo;
 	FLOAT_T *a, *b, *as, *bs, *rank_sum;
 	FLOAT_T mysum, nc_sum, par_sum, can_mpi_sum, rand_sum;
 	FLOAT_T starttime, endtime, ptime;
@@ -89,22 +90,13 @@ int main (int argc, char* argv[])
 		goto done;
 	}
 	/* Select distribution for random floating point numbers */
-	dist = argv[2];
-	if (dist == "runif[0,1]") {
-		rand_flt_a = &unif_rand_R;
-		rand_flt_b = &unif_rand_R;
-	} else if (dist == "runif[-1,1]") {
-		rand_flt_a = &unif_rand_R1;
-		rand_flt_b = &unif_rand_R1;
-	} else if (dist == "runif[-1000,1000]") {
-		rand_flt_a = &unif_rand_R1000;
-		rand_flt_b = &unif_rand_R1000;
-	} else if (dist == "rsubn") {
-		rand_flt_a = &subnormal_rand;
-		rand_flt_b = &subnormal_rand;
-	} else {
-		if (taskid == 0) fprintf(stderr, "Unrecognized distribution:\n%s", USAGE);
-		rc = 1;
+	distr = argv[2];
+	rc = parse_distr<FLOAT_T>(distr, &rand_flt_a)
+		|| parse_distr<FLOAT_T>(distr, &rand_flt_b);
+	if (rc != 0) {
+		if (taskid == 0) {
+			fprintf(stderr, "Unrecognized distribution:\n%s", USAGE);
+		}
 		goto done;
 	}
 	topo = argv[3];
@@ -178,7 +170,7 @@ int main (int argc, char* argv[])
 		// Generate a random summation
 		rand_sum = associative_accumulate_rand<FLOAT_T>(numtasks, rank_sum, is_sum, &height);
 
-		// Print header then different summations
+		// Print header then different dot products
 		printf("numtasks\tveclen\ttopology\treduction algorithm\treduction order\theight\tparallel time\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
 		pv.d = mysum;
 		printf("%d\t%lld\t%s\t%s\tLeft assoc\t%lld\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, topo.c_str(), algo.c_str(), height, ptime, mysum, mysum, pv.u);
@@ -197,7 +189,7 @@ int main (int argc, char* argv[])
 	free(as);
 	free(bs);
 	free(rank_sum);
-	// MPI_Op_free(nc_sum_op); // Doesn't work with SimGrid
+	MPI_Op_free(&nc_sum_op);
 
 done:
 	MPI_Finalize();
