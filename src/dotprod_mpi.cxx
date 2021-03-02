@@ -37,6 +37,7 @@
 #include "util.hxx"
 
 #define FLOAT_T double
+using namespace boost::multiprecision;
 
 /* Note: it would be more robust to use ACCUMULATOR().operator()(a,b) instead
  * of a ACC_OP b, but this doesn't work for mpfr values */
@@ -47,6 +48,7 @@
 
 const bool is_sum  = std::is_same<std::plus<FLOAT_T>, ACCUMULATOR>::value;
 const bool is_prod = std::is_same<std::multiplies<FLOAT_T>, ACCUMULATOR>::value;
+mpfr_float_1000 mpfr_dot(FLOAT_T *as, FLOAT_T *bs, long long len);
 
 int main (int argc, char* argv[])
 {
@@ -60,6 +62,7 @@ int main (int argc, char* argv[])
 	FLOAT_T starttime, endtime, ptime;
 	FLOAT_T (*rand_flt_a)(); // Function to generate a random float
 	FLOAT_T (*rand_flt_b)(); // Function to generate a random float
+	mpfr_float_1000 mpfr_acc;
 	union udouble {
 		double d;
 		unsigned long u;
@@ -114,11 +117,11 @@ int main (int argc, char* argv[])
 
 	/* Assign storage for dot product vectors
 	 * We do extra here for simplicity and so rank 0 has enough room */
-	a  = (double*) malloc(len*sizeof(double));
-	b  = (double*) malloc(len*sizeof(double));
-	as = (double*) malloc(len*sizeof(double));
-	bs = (double*) malloc(len*sizeof(double));
-	rank_sum = (double *) malloc (numtasks*sizeof(double));
+	a  = (FLOAT_T*) malloc(len*sizeof(FLOAT_T));
+	b  = (FLOAT_T*) malloc(len*sizeof(FLOAT_T));
+	as = (FLOAT_T*) malloc(len*sizeof(FLOAT_T));
+	bs = (FLOAT_T*) malloc(len*sizeof(FLOAT_T));
+	rank_sum = (FLOAT_T *) malloc (numtasks*sizeof(FLOAT_T));
 
 	/* Initialize dot product vectors */
 	chunk = len/numtasks;
@@ -167,21 +170,36 @@ int main (int argc, char* argv[])
 		for (i = 0; i < numtasks; i++) {
 			can_mpi_sum += rank_sum[i];
 		}
+
 		// Generate a random summation
 		rand_sum = associative_accumulate_rand<FLOAT_T>(numtasks, rank_sum, is_sum, &height);
 
+		// MPFR
+		mpfr_acc = mpfr_dot(as, bs, len);
+
 		// Print header then different dot products
-		printf("numtasks\tveclen\ttopology\treduction algorithm\treduction order\theight\tparallel time\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
+		printf("numtasks\tveclen\ttopology\tdistribution\treduction algorithm\torder\theight\ttime\tFP (decimal)\tFP (%%a)\tFP (hex)\n");
 		pv.d = mysum;
-		printf("%d\t%lld\t%s\t%s\tLeft assoc\t%lld\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, topo.c_str(), algo.c_str(), height, ptime, mysum, mysum, pv.u);
+		printf("%d\t%lld\t%s\t%s\t%s\tLeft assoc\t%lld\t%f\t%.15f\t%a\t0x%lx\n",
+			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(), len-1, nan(""), mysum, mysum, pv.u);
 		pv.d = rand_sum;
-		printf("%d\t%lld\t%s\t%s\tRandom assoc\t%lld\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, topo.c_str(), algo.c_str(), height, ptime, rand_sum, rand_sum, pv.u);
+		printf("%d\t%lld\t%s\t%s\t%s\tRandom assoc\t%lld\t%f\t%.15f\t%a\t0x%lx\n",
+			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(), height, ptime, rand_sum, rand_sum, pv.u);
+		// TODO: Figure out the height of MPI Reduce and MPI noncommutative sum, and canonical MPI sum
+		// TODO: Add in timings for MPFR and serial summations.
 		pv.d = par_sum;
-		printf("%d\t%lld\t%s\t%s\tMPI Reduce\t%lld\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, topo.c_str(), algo.c_str(), height, ptime, par_sum, par_sum, pv.u);
+		printf("%d\t%lld\t%s\t%s\t%s\tMPI Reduce\t%lld\t%f\t%.15f\t%a\t0x%lx\n",
+			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(), 0LL, ptime, par_sum, par_sum, pv.u);
 		pv.d = nc_sum;
-		printf("%d\t%lld\t%s\t%s\tMPI noncomm sum\t%lld\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, topo.c_str(), algo.c_str(), height, ptime, nc_sum, nc_sum, pv.u);
+		printf("%d\t%lld\t%s\t%s\t%s\tMPI noncomm sum\t%lld\t%f\t%.15f\t%a\t0x%lx\n",
+			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(), 0LL, ptime, nc_sum, nc_sum, pv.u);
 		pv.d = can_mpi_sum;
-		printf("%d\t%lld\t%s\t%s\tCanonical MPI\t%lld\t%f\t%.15f\t%a\t0x%lx\n", numtasks, len, topo.c_str(), algo.c_str(), height, ptime, can_mpi_sum, can_mpi_sum, pv.u);
+		printf("%d\t%lld\t%s\t%s\t%s\tCanonical MPI\t%lld\t%f\t%.15f\t%a\t0x%lx\n",
+			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(), (long long) numtasks-1, nan(""), can_mpi_sum, can_mpi_sum, pv.u);
+		mpfr_printf("%d\t%lld\t%s\t%s\t%s\tMPFR(%d) left assoc\t%lld\t%f\t%.20RNf\t%.20RNa\t%RNa\n",
+			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(),
+			std::numeric_limits<mpfr_float_1000>::digits, // Precision of MPFR
+			len-1, nan(""), mpfr_acc, mpfr_acc, mpfr_acc);
 	}
 
 	free(a);
@@ -194,4 +212,14 @@ int main (int argc, char* argv[])
 done:
 	MPI_Finalize();
 	return rc;
+}
+
+mpfr_float_1000 mpfr_dot(FLOAT_T *as, FLOAT_T *bs, long long len)
+{
+	mpfr_float_1000 acc;
+	acc = 0.0;
+	for (long long i = 0; i < len; i++) {
+		acc = acc + as[i] * bs[i];
+	}
+	return(acc);
 }
