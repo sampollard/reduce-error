@@ -7,28 +7,28 @@ USE_MPI ?= 1
 MPICXX ?= smpicxx
 #MPICXX = mpicxx
 
+# If using a different install location for simgrid, specify that here
+LDFLAGS += -L$${HOME}/.local/simgrid/lib -Wl,-rpath=$${HOME}/.local/simgrid/lib
+
 # Experiment Parameters
-EXP_DIR = experiments/post-acceptance
+EXP_DIR = experiments/2021
 RAND_TRIALS = 1000000
 VECLEN_RAND_QUICK = 100000
 VECLEN_RAND_BIG = 2000000
 RAND_TRIALS_DEEP = 5000000
 VECLEN_RAND_DEEP = 256
 
-EXTRA_SOURCES = assoc.cxx mpi_op.cxx rand.cxx
-HEADERS = assoc.hxx mpi_op.hxx rand.hxx util.hxx
+EXTRA_SOURCES = assoc.cxx error_semantics.cxx mpi_op.cxx rand.cxx
+HEADERS = assoc.hxx error_semantics.hxx mpi_op.hxx rand.hxx util.hxx
 ifeq ($(USE_MPI), 1)
 TARGETS = mpi_pi_reduce dotprod_mpi
 else
 TARGETS = assoc_test gen_random
 endif
 
-# SimGrid options
-LDFLAGS += -L$${HOME}/.local/simgrid/lib -Wl,-rpath=$${HOME}/.local/simgrid/lib
-LIBS += -lmpfr -lgmp
-CXXFLAGS += -Wall -g
-
 # Shouldn't need to change
+LIBS += -lmpfr -lgmp
+CXXFLAGS += -Wall -g -std=c++14
 OBJECTS = $(EXTRA_SOURCES:.cxx=.o)
 TARGET_OBJS = $(TARGETS:=.o)
 
@@ -41,12 +41,11 @@ else
 	$(CXX) $(CXXFLAGS) -c $^
 endif
 
-
 # MPI targets
 ifeq ($(USE_MPI),1)
 mpi_pi_reduce: mpi_pi_reduce.o rand.o
 	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
-dotprod_mpi : $(OBJECTS) rand.o mpi_op.o dotprod_mpi.o
+dotprod_mpi : dotprod_mpi.o assoc.o error_semantics.o mpi_op.o rand.o
 	$(MPICXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 else 
 # Non-MPI targets
@@ -115,7 +114,8 @@ clean :
 # Dependency lists
 assoc.o : assoc.hxx
 assoc_test.o : assoc.hxx rand.hxx util.hxx
-dotprod_mpi.o : rand.hxx assoc.hxx mpi_op.hxx
+error_semantics.o : error_semantics.hxx
+dotprod_mpi.o : error_semantics.hxx rand.hxx assoc.hxx mpi_op.hxx util.hxx
 gen_random.o : rand.hxx
 mpi_op.o : mpi_op.hxx
 mpi_pi_reduce.o : rand.hxx

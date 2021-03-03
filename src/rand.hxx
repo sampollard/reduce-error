@@ -19,6 +19,6 @@ double subnormal_rand(void);
 /* Given a string, parse it as a random number generator, returning a function
  * pointer. 0 on success, 1 on failure. */
 template <typename FLOAT_T>
-int parse_distr(std::string description, FLOAT_T (**distr)());
+int parse_distr(std::string description, double* mag, FLOAT_T (**distr)());
 
 #endif

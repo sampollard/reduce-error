@@ -21,6 +21,7 @@
 #define RAND_CXX
 
 #include <string>
+#include <algorithm>
 
 /* A version of Marsaglia-MultiCarry */
 
@@ -52,8 +53,8 @@ union Double {
 
 double subnormal_rand(void)
 {
-    I1= 36969*(I1 & 0177777) + (I1>>16);
-    I2= 18000*(I2 & 0177777) + (I2>>16);
+	I1= 36969*(I1 & 0177777) + (I1>>16);
+	I2= 18000*(I2 & 0177777) + (I2>>16);
 
 	Double x;
 	long long unsigned i1 = (unsigned long long) I1;
@@ -78,16 +79,20 @@ double unif_rand_R1000()
 }
 
 template <typename FLOAT_T>
-int parse_distr(std::string description, FLOAT_T (**distr)())
+int parse_distr(std::string description, double* mag, FLOAT_T (**distr)())
 {
 	if (description == "runif[0,1]") {
 		*distr = &unif_rand_R;
+		*mag = std::max(*mag, 1.);
 	} else if (description == "runif[-1,1]") {
 		*distr = &unif_rand_R1;
+		*mag = std::max(*mag, 1.);
 	} else if (description == "runif[-1000,1000]") {
 		*distr = &unif_rand_R1000;
+		*mag = std::max(*mag, 1000.);
 	} else if (description == "rsubn") {
 		*distr = &subnormal_rand;
+		*mag = std::max(*mag, 2.);
 	} else {
 		return 1;
 	}
@@ -97,6 +102,6 @@ int parse_distr(std::string description, FLOAT_T (**distr)())
 /* Explicit template instantiation. */
 // float currently not supported.
 // template int parse_distr(std::string description, float (**distr)());
-template int parse_distr(std::string description, double (**distr)());
+template int parse_distr(std::string description, double* mag, double (**distr)());
 
 #endif
