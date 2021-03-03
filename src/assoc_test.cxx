@@ -73,7 +73,8 @@ int main (int argc, char* argv[])
 	}
 	/* Select distribution for random floating point numbers */
 	std::string dist = argv[3];
-	rc = parse_distr<FLOAT_T>(dist, &rand_flt);
+	FLOAT_T mag;
+	rc = parse_distr<FLOAT_T>(dist, &mag, &rand_flt);
 	if (rc != 0) {
 		fprintf(stderr, "Unrecognized distribution:\n%s", USAGE);
 		return 1;

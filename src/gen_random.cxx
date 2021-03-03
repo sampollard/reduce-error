@@ -16,7 +16,8 @@
 
 int main (int argc, char* argv[])
 {
-	double (*rand_flt)(); // Function to generate a random float
+	FLOAT_T (*rand_flt)(); // Function to generate a random float
+	FLOAT_T mag;
 	long long len, i;
 	int rc = 0;
 
@@ -30,7 +31,7 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 	std::string dist = argv[2];
-	rc = parse_distr<FLOAT_T>(dist, &rand_flt);
+	rc = parse_distr<FLOAT_T>(dist, &mag, &rand_flt);
 	if (rc != 0) {
 		fprintf(stderr, "Unrecognized distribution:\n%s", USAGE);
 		return 1;

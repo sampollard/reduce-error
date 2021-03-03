@@ -208,15 +208,15 @@ int main (int argc, char* argv[])
 		pv.d = can_mpi_sum;
 		printf("%d\t%lld\t%s\t%s\t%s\tCanonical MPI\t%lld\t%f\t%.15f\t%a\t0x%lx\n",
 			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(), (long long) numtasks-1, ctime, can_mpi_sum, can_mpi_sum, pv.u);
-		mpfr_printf("%d\t%lld\t%s\t%s\t%s\tMPFR(%d) left assoc\t%lld\t%f\t%.20RNf\t%.20RNa\t%RNa\n",
+		mpfr_printf("%d\t%lld\t%s\t%s\t%s\tMPFR(%d) left assoc\t%lld\t%f\t%.20RNf\t%.20RNe\t%RNa\n",
 			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(),
 			std::numeric_limits<mpfr_float_1000>::digits, // Precision of MPFR
 			len - 1, mpfrtime, mpfr_acc, mpfr_acc, mpfr_acc);
-		mpfr_printf("%d\t%lld\t%s\t%s\t%s\tPredicted error\t%lld\t%f\t%.20RNf\t%.20RNa\t%RNa\n",
+		mpfr_printf("%d\t%lld\t%s\t%s\t%s\tPredicted error\t%lld\t%f\t%.20RNf\t%.20RNe\t%RNa\n",
 			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(),
 			len-1, nan(""), error, error, error);
-		result = serial_sum - mpfr_acc;
-		mpfr_printf("%d\t%lld\t%s\t%s\t%s\tLeft assoc error\t%lld\t%f\t%.20RNf\t%.20RNa\t%RNa\n",
+		result = abs(serial_sum - mpfr_acc);
+		mpfr_printf("%d\t%lld\t%s\t%s\t%s\tLeft assoc error\t%lld\t%f\t%.20RNf\t%.20RNe\t%RNa\n",
 			numtasks, len, topo.c_str(), distr.c_str(), algo.c_str(),
 			len - 1, nan(""), result, result, result);
 	}

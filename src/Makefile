@@ -23,7 +23,7 @@ HEADERS = assoc.hxx error_semantics.hxx mpi_op.hxx rand.hxx util.hxx
 ifeq ($(USE_MPI), 1)
 TARGETS = mpi_pi_reduce dotprod_mpi
 else
-TARGETS = assoc_test gen_random
+TARGETS = assoc_test gen_random calc_bounds
 endif
 
 # Shouldn't need to change
@@ -53,6 +53,8 @@ assoc_test : assoc_test.o rand.o assoc.o
 	mkdir -p $(EXP_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 gen_random : gen_random.o rand.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+calc_bounds : calc_bounds.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 endif
 
@@ -114,6 +116,7 @@ clean :
 # Dependency lists
 assoc.o : assoc.hxx
 assoc_test.o : assoc.hxx rand.hxx util.hxx
+calc_bounds.o : error_semantics.hxx
 error_semantics.o : error_semantics.hxx
 dotprod_mpi.o : error_semantics.hxx rand.hxx assoc.hxx mpi_op.hxx util.hxx
 gen_random.o : rand.hxx
