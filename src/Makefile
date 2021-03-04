@@ -110,6 +110,9 @@ quick : dotprod_mpi
 ompi : mpi_pi_reduce dotprod_mpi
 	$(MAKE) -f openmpi.mk ompi
 
+high_error : calc_bounds
+	$(MAKE) -f high_error.mk all
+
 clean :
 	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
 
