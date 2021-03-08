@@ -1,4 +1,4 @@
-# Some notes on HPC
+# Some notes on Reduce Error
 ## Random number generation
 Consider `random` from the C `stdlib`. It returns a `long int` which is 32
 bits. If you have a long int, then divide by
@@ -797,3 +797,14 @@ Also `allreduce-lr.cpp:41: [smpi_colls/WARNING] MPI_allreduce_lr use default MPI
 - Just for grins, I want to see if we assume subn is exponential (with 355 as
   its factor, IIRC when we did expfit). I want to see how close the error is
   with Robertazzi.
+
+## Vec-E and Mat-E: Error built-in
+The idea here is to have a class that has three main elements:
+1. dimension
+2. numerical data (double or float, real or complex)
+3. error bound, as MPFR
+
+This could be generalized to vectors, matrices, and higher-order tensors. As operations
+are done on them (i.e. vec + vec) the error bounds changes. To support this, things
+like maximum magnitude may also be updated.
+

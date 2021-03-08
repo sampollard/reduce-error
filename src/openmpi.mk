@@ -3,10 +3,10 @@
 VECLEN_BIG = 72000000
 
 ifeq ($(USE_MPI), 0)
-$(error "make clean, then rerun with USE_MPI=1 SMPICXX=mpicxx make")
+$(error "make clean, then rerun with USE_MPI=1 MPICXX=mpicxx make")
 endif
-ifeq ($(MPICXX), 0)
-$(error "make clean, then rerun with USE_MPI=1 SMPICXX=mpicxx make")
+ifndef ($(MPICXX))
+$(error "make clean, then rerun with USE_MPI=1 MPICXX=mpicxx make")
 endif
 
 # For running on the host MPI (i.e. not Simgrid)

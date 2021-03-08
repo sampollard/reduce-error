@@ -11,15 +11,44 @@
 using namespace boost::multiprecision;
 using namespace boost::math;
 
+#define MPFR_T_DEFAULT mpfr_float_1000
+
 template <typename FLOAT_T>
-const mpfr_float_1000 mach_eps = std::numeric_limits<FLOAT_T>::epsilon();
+const MPFR_T_DEFAULT mach_eps = std::numeric_limits<FLOAT_T>::epsilon();
 
-const mpfr_float_1000 mach_eps_flt = mach_eps<float>;
-const mpfr_float_1000 mach_eps_dbl = mach_eps<double>;
+const MPFR_T_DEFAULT mach_eps_flt = mach_eps<float>;
+const MPFR_T_DEFAULT mach_eps_dbl = mach_eps<double>;
 
-const mpfr_float_1000 mach_del_flt = pow(2, std::numeric_limits<float>::min_exponent - 1)*mach_eps<float>;
-const mpfr_float_1000 mach_del_dbl = pow(2, std::numeric_limits<double>::min_exponent - 1)*mach_eps<double>;
+const MPFR_T_DEFAULT mach_del_flt =
+	pow(2, std::numeric_limits<float>::min_exponent - 1)*mach_eps<float>;
+const MPFR_T_DEFAULT mach_del_dbl =
+	pow(2, std::numeric_limits<double>::min_exponent - 1)*mach_eps<double>;
 
-mpfr_float_1000 dot_e(double mag, long long int n, mpfr_float_1000 e);
+MPFR_T_DEFAULT dot_e(double mag, long long int n, MPFR_T_DEFAULT e);
+
+template <class FLOAT_T, class MPFR_T>
+class Vec_E {
+	public:
+		// Empty constructor
+		Vec_E();
+		// Fill vector
+		// Vec_E(long long n, FLOAT_T* x);
+		// Fill vector with upper/lower bounds
+		Vec_E(long long n, FLOAT_T ub, FLOAT_T lb, FLOAT_T* x);
+		// Don't fill vector, just do symbolic computations
+		// Destructor
+		~Vec_E();
+		long long length();
+		MPFR_T error_ub();
+		MPFR_T error_lb();
+	private:
+		std::vector<FLOAT_T> data_;
+		MPFR_T ub_;
+		MPFR_T lb_;
+		MPFR_T mag_;
+		MPFR_T error_ub_;
+		MPFR_T error_lb_;
+		MPFR_T error_abs_;
+};
 
 #endif
