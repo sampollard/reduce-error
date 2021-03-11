@@ -20,13 +20,14 @@ VECLEN_RAND_DEEP = 256
 
 EXTRA_SOURCES = assoc.cxx error_semantics.cxx mpi_op.cxx rand.cxx
 HEADERS = assoc.hxx error_semantics.hxx mpi_op.hxx rand.hxx util.hxx
+# All targets for cleaning
 ifeq ($(USE_MPI), 1)
 TARGETS = mpi_pi_reduce dotprod_mpi
 else
 TARGETS = assoc_test gen_random calc_bounds
 endif
+ALL_TARGETS = mpi_pi_reduce dotprod_mpi assoc_test gen_random calc_bounds
 
-# Shouldn't need to change
 LIBS += -lmpfr -lgmp
 CXXFLAGS += -Wall -g -std=c++14
 OBJECTS = $(EXTRA_SOURCES:.cxx=.o)
@@ -54,7 +55,7 @@ assoc_test : assoc_test.o rand.o assoc.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 gen_random : gen_random.o rand.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
-calc_bounds : calc_bounds.o
+calc_bounds : error_semantics.o calc_bounds.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 endif
 
@@ -114,7 +115,7 @@ high_error : calc_bounds
 	$(MAKE) -f high_error.mk all
 
 clean :
-	$(RM) $(TARGETS) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so
+	$(RM) $(TARGETS) $(ALL_TARGETS) $(ALL_TARGETS:=.o) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so smpitmp-app*
 
 # Dependency lists
 assoc.o : assoc.hxx
