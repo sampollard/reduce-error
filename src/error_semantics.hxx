@@ -47,9 +47,9 @@ class Scal_E {
 		// Empty constructor
 		Scal_E();
 		// Fill scalar with upper/lower bounds
-		Scal_E(FLOAT_T x, FLOAT_T lb, FLOAT_T ub);
+		Scal_E(FLOAT_T x, FLOAT_T lb, FLOAT_T ub, MPFR_T err);
 		// Don't fill scalar, just do symbolic computations
-		Scal_E(FLOAT_T lb, FLOAT_T ub, MPFR_T error);
+		Scal_E(FLOAT_T lb, FLOAT_T ub, MPFR_T err);
 		// Destructor
 		~Scal_E();
 		long long length();
@@ -74,9 +74,9 @@ class Vec_E {
 		// Fill vector
 		// Vec_E(long long n, FLOAT_T* x);
 		// Fill vector with upper/lower bounds
-		Vec_E(FLOAT_T *x, long long n, FLOAT_T lb, FLOAT_T ub);
+		Vec_E(FLOAT_T *x, long long n, FLOAT_T lb, FLOAT_T ub, MPFR_T err);
 		// Don't fill vector, just do symbolic computations
-		Vec_E(long long n, FLOAT_T lb, FLOAT_T ub);
+		Vec_E(long long n, FLOAT_T lb, FLOAT_T ub, MPFR_T err);
 		// Destructor
 		~Vec_E();
 		long long length();

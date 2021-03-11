@@ -12,8 +12,8 @@ Scal_E<FLOAT_T, MPFR_T>::~Scal_E() { };
 
 // Fill concrete value and give upper/lower bounds
 template <class FLOAT_T, class MPFR_T>
-Scal_E<FLOAT_T, MPFR_T>::Scal_E(FLOAT_T x, FLOAT_T lb, FLOAT_T ub)
-	: data_(x), lb_(lb), ub_(ub)
+Scal_E<FLOAT_T, MPFR_T>::Scal_E(FLOAT_T x, FLOAT_T lb, FLOAT_T ub, MPFR_T err)
+	: data_(x), lb_(lb), ub_(ub), error_lb_(-err), error_ub_(err)
 {
 	inf_norm_ = std::max(abs(lb),abs(ub));
 }
@@ -21,14 +21,14 @@ Scal_E<FLOAT_T, MPFR_T>::Scal_E(FLOAT_T x, FLOAT_T lb, FLOAT_T ub)
 // Don't fill vector, just do symbolic computations
 /* TODO */
 template <class FLOAT_T, class MPFR_T>
-Scal_E<FLOAT_T, MPFR_T>::Scal_E(FLOAT_T lb, FLOAT_T ub, MPFR_T error)
-	: lb_(lb), ub_(ub)
+Scal_E<FLOAT_T, MPFR_T>::Scal_E(FLOAT_T lb, FLOAT_T ub, MPFR_T err)
+	: lb_(lb), ub_(ub), error_lb_(-err), error_ub_(err)
 {
 	inf_norm_ = std::max<FLOAT_T>(abs(lb), abs(ub));
 }
 
 template <class FLOAT_T, class MPFR_T>
-long long Scal_E<FLOAT_T, MPFR_T>::length() { return 1LL; };
+long long Scal_E<FLOAT_T, MPFR_T>::length() { return 1LL; }
 
 template <class FLOAT_T, class MPFR_T>
 FLOAT_T Scal_E<FLOAT_T, MPFR_T>::lb() { return lb_; }
@@ -51,8 +51,9 @@ Vec_E<FLOAT_T, MPFR_T>::~Vec_E() { };
 
 // Fill vector with upper/lower bounds
 template <class FLOAT_T, class MPFR_T>
-Vec_E<FLOAT_T, MPFR_T>::Vec_E(FLOAT_T *x, long long n, FLOAT_T lb, FLOAT_T ub)
-	: n_(n), lb_(lb), ub_(ub)
+Vec_E<FLOAT_T, MPFR_T>::Vec_E(
+	FLOAT_T *x, long long n, FLOAT_T lb, FLOAT_T ub, MPFR_T err)
+	: n_(n), lb_(lb), ub_(ub), error_lb_(-err), error_ub_(err)
 {
 	data_.reserve(n);
 	for (long long i = 0; i < n; i++) {
@@ -63,8 +64,9 @@ Vec_E<FLOAT_T, MPFR_T>::Vec_E(FLOAT_T *x, long long n, FLOAT_T lb, FLOAT_T ub)
 
 // Don't fill vector, just do symbolic computations
 template <class FLOAT_T, class MPFR_T>
-Vec_E<FLOAT_T, MPFR_T>::Vec_E(long long n, FLOAT_T lb, FLOAT_T ub)
-	: n_(n), lb_(lb), ub_(ub)
+Vec_E<FLOAT_T, MPFR_T>::Vec_E(
+	long long n, FLOAT_T lb, FLOAT_T ub, MPFR_T err)
+	: n_(n), lb_(lb), ub_(ub), error_lb_(-err), error_ub_(err)
 {
 	inf_norm_ = std::max(abs(lb),abs(ub));
 }
@@ -88,14 +90,13 @@ MPFR_T Vec_E<FLOAT_T, MPFR_T>::error_ub() { return error_ub_; }
 MPFR_T_DEFAULT gamma(const std::type_info& float_t, long long int n)
 {
 	MPFR_T_DEFAULT eps;
-	if (typeid(float_t) == typeid(double)) {
+	if (float_t == typeid(double)) {
 		eps = mach_eps<double>;
-	} else if (typeid(float_t) == typeid(float)) {
+	} else if (float_t == typeid(float)) {
 		eps = mach_eps<float>;
 	} else {
 		std::cerr << "gamma: unsupported floating-point type "
-			<< typeid(float_t).name() << std::endl;
-		std::cout << "Expected something like " << typeid(double).name() << std::endl;
+			<< float_t.name() << std::endl;
 		throw(ANALYSIS_EXCEPTION);
 	}
 	return n * eps / (1.0 - n * eps);

@@ -39,8 +39,8 @@ int main (int argc, char* argv[])
 	parse_expr(argv[4]);
 	Vec_E<FLOAT_T> x, y;
 	Scal_E<FLOAT_T> xdy = Scal_E<FLOAT_T>();
-	x = Vec_E<FLOAT_T>(n, lb, ub);
-	y = Vec_E<FLOAT_T>(n, lb, ub);
+	x = Vec_E<FLOAT_T>(n, lb, ub, 0.0);
+	y = Vec_E<FLOAT_T>(n, lb, ub, 0.0);
 	xdy = dot_e<FLOAT_T>(x, y);
 
 	std::cout << "x_i and y_i \\in [" << lb << "," << ub << "]" << std::endl;
