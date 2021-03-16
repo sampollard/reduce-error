@@ -1,6 +1,22 @@
 module Main where
 
-import Lib
+import Parser
+import System.Environment
+
+usage = "usage: stack exec fpopt <filename>"
 
 main :: IO ()
-main = someFunc
+main = do
+    args <- getArgs
+    case length args of
+        1 -> parseMain (head args)
+        _ -> putStrLn usage
+
+-- parsing has the effect of printing the parse tree as a string
+-- and writing the translated file to out.c, and a Makefile
+parseMain :: String -> IO ()
+parseMain filename = do
+    putStrLn ("# Generated from " ++ filename)
+    -- s <- readFile filename
+    -- parseTest parser s -- run_parser is more robust with errors
+

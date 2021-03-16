@@ -6,7 +6,7 @@ author:              "Samuel D. Pollard"
 maintainer:          "sam.d.pollard@gmail.com"
 copyright:           "2021 Samuel D. Pollard"
 
-extra-source-files:
+# extra-source-files:
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -19,12 +19,13 @@ description:         Please see the README on GitHub at <https://github.com/samp
 
 dependencies:
 - base >= 4.7 && < 5
+- parsec
 
 library:
   source-dirs: src
 
 executables:
-  fpopt-exe:
+  fpopt:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
