@@ -123,11 +123,7 @@ statement = do
 --       annotate it
 
 parser :: Parser TMatlab
-parser = do
-    whiteSpace
-    ss <- many command
-    eof
-    return ss
+parser = whiteSpace *> many command <* eof
 
 run_parser :: Stream s Identity t => Parsec s () p -> SourceName -> s -> p
 run_parser p fn st = case parse p fn st of

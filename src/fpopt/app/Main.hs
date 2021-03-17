@@ -2,7 +2,6 @@ module Main where
 
 import           Parser
 import           System.Environment
-import qualified Data.Text.IO as T
 
 usage = "usage: stack exec fpopt <filename>"
 
