@@ -2,6 +2,9 @@
 *.o
 *.gch
 
+# Misc
+tags
+
 # Temporary files made by SimGrid
 smpitmp-*
 

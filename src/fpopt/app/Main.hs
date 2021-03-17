@@ -1,7 +1,8 @@
 module Main where
 
-import Parser
-import System.Environment
+import           Parser
+import           System.Environment
+import qualified Data.Text.IO as T
 
 usage = "usage: stack exec fpopt <filename>"
 
@@ -17,6 +18,7 @@ main = do
 parseMain :: String -> IO ()
 parseMain filename = do
     putStrLn ("# Generated from " ++ filename)
-    -- s <- readFile filename
-    -- parseTest parser s -- run_parser is more robust with errors
+    s <- readFile filename
+    let m = run_parser parser filename s
+    putStrLn $ "# " ++ (show m)
 
