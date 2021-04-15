@@ -808,3 +808,15 @@ This could be generalized to vectors, matrices, and higher-order tensors. As ope
 are done on them (i.e. vec + vec) the error bounds changes. To support this, things
 like maximum magnitude may also be updated.
 
+## Looking at Inverse Square Root (rsqrt) for 32-bit
+```
+import numpy as np
+y = np.array([.0001,1,.0001,1,.0001,1,.0001,1,.0001,1], dtype=np.single)
+yd = np.array([.0001,1,.0001,1,.0001,1,.0001,1,.0001,1], dtype=np.double)
+1.0/np.sqrt(np.sum(y * y))
+1.0/np.sqrt(np.sum(yd * yd))
+x = np.array([0.0001]*10, dtype=np.single)
+xd = np.array([0.0001]*10, dtype=np.double)
+1.0/np.sqrt(np.sum(x * x))
+1.0/np.sqrt(np.sum(xd * xd))
+```
