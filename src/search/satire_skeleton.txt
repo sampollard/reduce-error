@@ -1,0 +1,36 @@
+# Skeleton for Satire search
+# fl type can be fl32 or fl64
+# rnd type can be rnd64 or rnd32
+INPUTS {
+	x_0 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+	x_1 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+	x_2 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+	x_3 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+	x_4 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+	x_5 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+	x_6 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+	x_7 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+	x_8 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+	x_9 FL_TYPE : (LOWER_BOUND, UPPER_BOUND);
+}
+
+OUTPUTS {
+	s_9;
+	square_root;
+	invsqrt;
+}
+
+EXPRS {
+	s_0 RND_TYPE =       x_0 * x_0;
+	s_1 RND_TYPE = s_0 + x_1 * x_1;
+	s_2 RND_TYPE = s_1 + x_2 * x_2;
+	s_3 RND_TYPE = s_2 + x_3 * x_3;
+	s_4 RND_TYPE = s_3 + x_4 * x_4;
+	s_5 RND_TYPE = s_4 + x_5 * x_5;
+	s_6 RND_TYPE = s_5 + x_6 * x_6;
+	s_7 RND_TYPE = s_6 + x_7 * x_7;
+	s_8 RND_TYPE = s_7 + x_8 * x_8;
+	s_9 RND_TYPE = s_8 + x_9 * x_9;
+	square_root RND_TYPE = sqrt(s_9);
+	invsqrt RND_TYPE = 1.0 / square_root;
+}
