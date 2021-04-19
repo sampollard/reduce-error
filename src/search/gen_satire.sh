@@ -69,7 +69,7 @@ echo "Writing Satire output to $OUTFILE..." | tee -a "$LOG"
 \time -a -o "$LOG" python3 "$SATIRE_PY" --file "$INFILE" --outfile "$OUTFILE" >> "$LOG"
 
 # Generate a larger example
-N=100
+N=50
 LEN_INFILE='test.txt'
 LEN_OUTFILE='test.out'
 
