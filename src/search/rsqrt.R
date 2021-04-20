@@ -4,27 +4,37 @@ library(gmp)
 library(ggplot2)
 library(Rmpfr)
 library(viridis)
+library(reshape2)
 
-# Don't want to generate uniformly, but logarithmically-uniformly n_points <- 100
+DBL_EPS <- .Machine$double.eps
+if (!dir.exists("figures")) {
+	dir.create("figures")
+}
+
+# Don't want to generate uniformly, but logarithmically-uniformly
+n_points <- 100
 x_log <- seq(-3, 3, length.out=n_points)
 x <- 10^x_log
 
 # The result, 3 different ways. rsqrt_md is rounded to double, easier to print.
+# NOTE: Be careful with rsqrt_md and the floor effect! May show 0 error.
 rsqrt <- 1.0 / sqrt(x)                           # Double approximation
 rsqrt_m <- mpfr(1.0, 3324) / sqrt(mpfr(x, 3324)) # MPFR 1000 digit
 rsqrt_md <- as.numeric(rsqrt_m)                  # MPFR 1000, rounded.
 # Evidence that using rsqrt_md instead of rsqrt_m is not too bad
 stopifnot(all(
-	as.numeric(abs((rsqrt_m - rsqrt_md)/rsqrt_m)) <= .Machine$double.eps))
+	as.numeric(abs((rsqrt_m - rsqrt_md)/rsqrt_m)) <= DBL_EPS))
 # If there was no error, these would all be zero!
 rsqrt_dbl_abserr <- as.numeric(abs(rsqrt_m - rsqrt))
 
 # Another interesting way to look at it - only get those which do not
-# round to the closest floating-point approximation.
+# round to the closest floating-point approximation. May also want
+# to look at
+# sum(rsqrt_dbl_abserr > DBL_EPS) or sum(rsqrt_dbl_abserr > DBL_EPS/2)
 abserr_dbl_approx <- abs(as.numeric(rsqrt_m) - rsqrt)
 
 # Relative Error
-relerr <- function(xhat, x) {
+rel_err <- function(xhat, x) {
 	abs((xhat - x)/x)
 }
 
@@ -33,6 +43,44 @@ relerr <- function(xhat, x) {
 # no error, this should be identical
 rsqrt_newton_iter <- function(x, y) {
 	y * (1.5 - 0.5*x*y*y)
+}
+
+plt_iters <- function(rsqrt, y, ..., title = "Newton's Method") {
+	ys <- list(...)
+	col <- viridis_pal()(1+length(ys))
+	# Depending on if we use mpfr or double
+	get_re <- function(y, yhat) {
+		if (class(y) == "mpfr") {
+			return(as.numeric(rel_err(y, mpfr(yhat, 3324))))
+		} else {
+			return(rel_err(y, yhat))
+		}
+	}
+
+	# Data frame looks like this:
+    #   rsqrt y0 y1 y2 ...
+	# where rsqrt is the true result, y0 is the initial guess,
+	# y1 is the first iteration, etc.
+	df <- data.frame(rsqrt = as.numeric(rsqrt), y0 = get_re(rsqrt, y))
+	i <- 1
+	for (yi in ys) {
+		i <- i + 1
+		df <- cbind(df, get_re(rsqrt, yi))
+		colnames(df)[i+1] <- sprintf("y%d", i-1)
+	}
+	message("Generating plot for ", colnames(df))
+	dfp <- melt(df, id.vars = "rsqrt", value.name = "relerr", variable.name = "iterations")
+
+	p <- ggplot(dfp, aes(x = rsqrt, y = relerr, color = iterations)) +
+		#geom_point(shape = "square", size = 0.5)
+		geom_point() +
+		scale_color_viridis_d(end = 0.85) +
+		geom_hline(yintercept = DBL_EPS/2, color = "red") +
+		annotate("text", label = expression(epsilon),
+			x = max(dfp$rsqrt), y = DBL_EPS/2, vjust = -1.0) +
+		labs(title = title) +
+		scale_y_log10()
+	return(p)
 }
 
 # Satire initial guess (iteration 0)
@@ -48,16 +96,17 @@ y0_T <- 1 - (x-1)/2
 y1_T <- rsqrt_newton_iter(x, y0_T)
 y2_T <- rsqrt_newton_iter(x, y1_T)
 y3_T <- rsqrt_newton_iter(x, y2_T)
+# TODO: plot
 
 # Bound the relative error
 # Intel has two rounding modes, one with
 # 2^-14 relative error ~= 4.21 digits
 # and one with 2^-28 relative error ~= 8.43 digits.
-y0_C <- signif(1/sqrt(x), digits=4)
-y1_C <- rsqrt_newton_iter(x, y0_C)
-y2_C <- rsqrt_newton_iter(x, y1_C)
-y3_C <- rsqrt_newton_iter(x, y2_C)
-y4_C <- rsqrt_newton_iter(x, y3_C)
+y0_R4D <- signif(1/sqrt(x), digits=4)
+y1_R4D <- rsqrt_newton_iter(x, y0_R4D)
+y2_R4D <- rsqrt_newton_iter(x, y1_R4D)
+y3_R4D <- rsqrt_newton_iter(x, y2_R4D)
+y4_R4D <- rsqrt_newton_iter(x, y3_R4D)
 
 # Use MPFR to get actually lower precision.
 y0_R14 <- as.numeric(mpfr(1.0, 14)/sqrt(mpfr(x, 14)))
@@ -65,6 +114,10 @@ y1_R14 <- rsqrt_newton_iter(x, y0_R14)
 y2_R14 <- rsqrt_newton_iter(x, y1_R14)
 y3_R14 <- rsqrt_newton_iter(x, y2_R14)
 y4_R14 <- rsqrt_newton_iter(x, y3_R14)
+pmR14 <- plt_iters(rsqrt_m, y0_R14, y1_R14, y2_R14, y3_R14,
+	title = "Newton's Method, Initial Guess 2^-14")
+ggsave("figures/pmR14.pdf",
+    plot = pmR14, scale = 0.9, height = 4, width = 6)
 
 # MPFR to get 28 bits relative error like Intel intrinsics
 y0_R28 <- as.numeric(mpfr(1.0, 28)/sqrt(mpfr(x, 28)))
@@ -72,42 +125,8 @@ y1_R28 <- rsqrt_newton_iter(x, y0_R28)
 y2_R28 <- rsqrt_newton_iter(x, y1_R28)
 y3_R28 <- rsqrt_newton_iter(x, y2_R28)
 y4_R28 <- rsqrt_newton_iter(x, y3_R28)
-
-plt_iters <- function(rsqrt, y, ...) {
-	ys <- list(...)
-	i <- 1
-	col <- viridis_pal()(1+length(ys))
-	# Depending on if we use mpfr or double
-	get_re <- function(y, yhat) {
-		if (class(y) == "mpfr") {
-			return(as.numeric(relerr(y, mpfr(yhat, 3324))))
-		} else {
-			return(relerr(y, yhat))
-		}
-	}
-
-	df <- data.frame(rsqrt = rsqrt, y = y)
-	p <- ggplot(df, aes(x = y, y = get_re(rsqrt, y))) +
-		#geom_point(shape = "square", size = 0.5)
-		geom_point(color = col[i]) +
-		scale_y_log10()
-	for (yi in ys) {
-		i <- i + 1
-		re <- get_re(rsqrt, yi)
-		p <- p +
-			geom_point(data = data.frame(rsqrt = rsqrt, y = yi),
-			           color = col[i])
-	}
-	# p <- p + guides(color = col)
-	return(p)
-}
-
-p0T <- plt_iters(rsqrt_md, y0_T)
-p1T <- plt_iters(rsqrt_md, y1_T)
-# ...
-pnT <- plt_iters(rsqrt_md, y0_T, y1_T)
-pmR14 <- plt_iters(rsqrt_md, y0_R14, y1_R14, y2_R14, y3_R14)
-#pdR14 <- plt_iters(rsqrt_md, y0_R14, y1_R14, y2_R14, y3_R14)
-#p0R28 <- plt_iters(rsqrt_md, y0_R28)
-p4C <- plt_iters(rsqrt_md, y3_C)
+pmR28 <- plt_iters(rsqrt_m, y0_R28, y1_R28, y2_R28, y3_R28,
+	title = "Newton's Method, Initial Guess 2^-28")
+ggsave("figures/pmR28.pdf",
+    plot = pmR14, scale = 0.9, height = 4, width = 6)
 
