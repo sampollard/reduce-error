@@ -11,9 +11,11 @@ if (!dir.exists("figures")) {
 	dir.create("figures")
 }
 
+DIM <- 50
+
 # Don't want to generate uniformly, but logarithmically-uniformly
-n_points <- 100
-x_log <- seq(-3, 3, length.out=n_points)
+N_POINTS <- 1000
+x_log <- seq(-3, 3, length.out=N_POINTS)
 x <- 10^x_log
 
 # The result, 3 different ways. rsqrt_md is rounded to double, easier to print.
@@ -68,7 +70,7 @@ plt_iters <- function(rsqrt, y, ..., title = "Newton's Method") {
 		df <- cbind(df, get_re(rsqrt, yi))
 		colnames(df)[i+1] <- sprintf("y%d", i-1)
 	}
-	message("Generating plot for ", colnames(df))
+	message("Generating plot titled: ", title)
 	dfp <- melt(df, id.vars = "rsqrt", value.name = "relerr", variable.name = "iterations")
 
 	p <- ggplot(dfp, aes(x = rsqrt, y = relerr, color = iterations)) +
@@ -78,7 +80,9 @@ plt_iters <- function(rsqrt, y, ..., title = "Newton's Method") {
 		geom_hline(yintercept = DBL_EPS/2, color = "red") +
 		annotate("text", label = expression(epsilon),
 			x = max(dfp$rsqrt), y = DBL_EPS/2, vjust = -1.0) +
-		labs(title = title) +
+		labs(title = title,
+		     caption = sprintf("n = %d\n%.1f <= x <= %.1f",
+	                           length(x), min(x), max(x))) +
 		scale_y_log10()
 	return(p)
 }
@@ -88,15 +92,32 @@ y0_S <- 0.5 / x
 y1_S <- rsqrt_newton_iter(x, y0_S)
 y2_S <- rsqrt_newton_iter(x, y1_S)
 y3_S <- rsqrt_newton_iter(x, y2_S)
+y4_S <- rsqrt_newton_iter(x, y3_S)
+y5_S <- rsqrt_newton_iter(x, y4_S)
+y6_S <- rsqrt_newton_iter(x, y5_S)
+y7_S <- rsqrt_newton_iter(x, y6_S)
+pmS <- plt_iters(rsqrt_m, y0_S, y1_S, y2_S, y3_S, y4_S, y5_S, y6_S, y7_S,
+	title = "Newton's Method, Initial Guess 0.5/x")
+ggsave("figures/pmS.pdf",
+    plot = pmS, scale = 0.9, height = 4, width = 6)
 
 # Taylor series first-order approximation
 # if g(x) = 1/sqrt(1+mx), then g(x) = 1 - mx/2 + O(x^2)
 # So, m = 1 and z = (x-1) give g(z) = 1/sqrt(x)
-y0_T <- 1 - (x-1)/2
-y1_T <- rsqrt_newton_iter(x, y0_T)
-y2_T <- rsqrt_newton_iter(x, y1_T)
-y3_T <- rsqrt_newton_iter(x, y2_T)
-# TODO: plot
+y0_T1 <- 1 - (x-1)/2
+y1_T1 <- rsqrt_newton_iter(x, y0_T1)
+y2_T1 <- rsqrt_newton_iter(x, y1_T1)
+y3_T1 <- rsqrt_newton_iter(x, y2_T1)
+y4_T1 <- rsqrt_newton_iter(x, y3_T1)
+y5_T1 <- rsqrt_newton_iter(x, y4_T1)
+y6_T1 <- rsqrt_newton_iter(x, y5_T1)
+y7_T1 <- rsqrt_newton_iter(x, y6_T1)
+y8_T1 <- rsqrt_newton_iter(x, y7_T1)
+pmT1 <- plt_iters(rsqrt_m, y0_T1, y1_T1, y2_T1, y3_T1, y4_T1, y5_T1, y6_T1, y6_T1,
+	title = "Newton's Method, Initial Guess 1st Order Taylor")
+ggsave("figures/pmT1.pdf",
+    plot = pmT1, scale = 0.9, height = 4, width = 6)
+
 
 # Bound the relative error
 # Intel has two rounding modes, one with
@@ -128,5 +149,5 @@ y4_R28 <- rsqrt_newton_iter(x, y3_R28)
 pmR28 <- plt_iters(rsqrt_m, y0_R28, y1_R28, y2_R28, y3_R28,
 	title = "Newton's Method, Initial Guess 2^-28")
 ggsave("figures/pmR28.pdf",
-    plot = pmR14, scale = 0.9, height = 4, width = 6)
+    plot = pmR28, scale = 0.9, height = 4, width = 6)
 
