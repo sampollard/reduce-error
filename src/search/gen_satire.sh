@@ -14,6 +14,7 @@ rm -f "$LOG"
 
 SATIRE_PY="$HOME/Documents/uo/reduce-error/Satire/src/satire.py"
 SKELETON="satire_skeleton.txt"
+SKELETON_DIM=10
 
 RND_T_LIST='rnd32 rnd64'
 # RND_TYPE implies a certain FL_TYPE, at least for now
@@ -29,9 +30,9 @@ for RND_TYPE in $RND_T_LIST; do
 	fi
 	for UPPER_BOUND in $UB_LIST; do
 		for LOWER_BOUND in $LB_LIST; do
-				SLUG="satire-$FL_TYPE-$RND_TYPE-$LOWER_BOUND-$UPPER_BOUND.txt"
-				INFILE="input/$SLUG"
-				OUTFILE="output/$SLUG"
+				SLUG="satire-$FL_TYPE-$RND_TYPE-N$SKELETON_DIM-$LOWER_BOUND-$UPPER_BOUND"
+				INFILE="input/$SLUG.txt"
+				OUTFILE="output/$SLUG.txt"
 
 				echo "Writing Satire input to $INFILE..."
 
@@ -50,10 +51,10 @@ done
 # Just try one for debugging purposes
 FL_TYPE='fl64'
 RND_TYPE='rnd64'
-LOWER_BOUND=0.0000001
+LOWER_BOUND=0.000001
 UPPER_BOUND=1000000.0
 
-SLUG="satire-$FL_TYPE-$RND_TYPE-$LOWER_BOUND-$UPPER_BOUND"
+SLUG="satire-$FL_TYPE-$RND_TYPE-N$SKELETON_DIM-$LOWER_BOUND-$UPPER_BOUND"
 INFILE="input/$SLUG.txt"
 OUTFILE="output/$SLUG.out"
 
@@ -69,9 +70,11 @@ echo "Writing Satire output to $OUTFILE..." | tee -a "$LOG"
 \time -a -o "$LOG" python3 "$SATIRE_PY" --file "$INFILE" --outfile "$OUTFILE" >> "$LOG"
 
 # Generate a larger example
-N=50
-LEN_INFILE='test.txt'
-LEN_OUTFILE='test.out'
+N=200
+LEN_INFILE="rsqrt_$N.txt"
+LEN_OUTFILE="rsqrt_$N.out"
+LOWER_BOUND=0.001
+UPPER_BOUND=1000.0
 
 FILE="$LEN_INFILE"
 printf "INPUTS {\n" > "$FILE"

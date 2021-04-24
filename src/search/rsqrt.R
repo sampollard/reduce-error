@@ -15,7 +15,7 @@ DIM <- 50
 
 # Don't want to generate uniformly, but logarithmically-uniformly
 N_POINTS <- 1000
-x_log <- seq(-3, 3, length.out=N_POINTS)
+x_log <- seq(-1, 3, length.out=N_POINTS)
 x <- 10^x_log
 
 # The result, 3 different ways. rsqrt_md is rounded to double, easier to print.
