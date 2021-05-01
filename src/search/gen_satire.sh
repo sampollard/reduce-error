@@ -70,7 +70,7 @@ echo "Writing Satire output to $OUTFILE..." | tee -a "$LOG"
 \time -a -o "$LOG" python3 "$SATIRE_PY" --file "$INFILE" --outfile "$OUTFILE" >> "$LOG"
 
 # Generate a larger example
-N=200
+N=100
 LEN_INFILE="rsqrt_$N.txt"
 LEN_OUTFILE="rsqrt_$N.out"
 LOWER_BOUND=0.001
@@ -94,4 +94,4 @@ printf "\tinvsqrt $RND_TYPE = 1.0 / square_root;\n" >> "$FILE"
 printf "\tx_${N}_unit $RND_TYPE = x_$N * invsqrt;\n}\n" >> "$FILE"
 
 echo "Running for N = $N..." | tee -a "$LOG"
-\time -a -o "$LOG" python3 "$SATIRE_PY" --file "$LEN_INFILE" --outfile "$LEN_OUTFILE" >> $LOG
+\time -a -o "$LOG" python3 "$SATIRE_PY" --parallel --file "$LEN_INFILE" --outfile "$LEN_OUTFILE" >> $LOG
