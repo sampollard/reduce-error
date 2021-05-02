@@ -9,7 +9,7 @@ if [ "$#" -ne 0 ]; then
 fi
 mkdir -p input
 mkdir -p output
-LOG=log.txt
+LOG=log-satire.txt
 rm -f "$LOG"
 
 SATIRE_PY="$HOME/Documents/uo/reduce-error/Satire/src/satire.py"
