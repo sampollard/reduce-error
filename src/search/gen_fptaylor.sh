@@ -14,7 +14,7 @@ mkdir -p output
 LOG=log-fp.txt
 
 rm -f "$LOG"
-FPTAYLOR="$HOME/Documents/uo/reduce-error/FPTaylor/fptaylor"
+FPTAYLOR="$HOME/fn-methods/FPTaylor/fptaylor"
 
 # Generate large case
 N=100
@@ -30,18 +30,31 @@ LEN_OUTFILE="rsqrt_fp_$N.out"
 FILE="$LEN_INFILE"
 
 printf "Variables\n" > "$FILE"
-for n in `seq $N`; do
-	printf "\treal x_$n in [$LOWER_BOUND, $UPPER_BOUND];\n" >> "$FILE"
+for n in `seq $(($N - 1))`; do
+	printf "\treal x_$n in [$LOWER_BOUND, $UPPER_BOUND],\n" >> "$FILE"
 done
-printf "\nExpressions\n\ts_1 $RND_TYPE = x_1 * x_1;\n" >> "$FILE"
+printf "\treal x_$N in [$LOWER_BOUND, $UPPER_BOUND]\n;\n" >> "$FILE"
+
+printf "\nDefinitions\n\ts_1 $RND_TYPE = x_1 * x_1,\n" >> "$FILE"
 for n in `seq 2 $N`; do
 	n_1=$(($n - 1))
-	printf "\ts_$n $RND_TYPE = s_$n_1 + x_$n * x_$n;\n" >> "$FILE"
+	printf "\ts_$n $RND_TYPE = s_$n_1 + x_$n * x_$n,\n" >> "$FILE"
 done
-printf "\tsquare_root $RND_TYPE = sqrt(s_$N);\n" >> "$FILE"
-printf "\tinvsqrt $RND_TYPE = 1.0 / square_root;\n" >> "$FILE"
-printf "\tx_${N}_unit $RND_TYPE = x_$N * invsqrt;\n" >> "$FILE"
+printf "\tnorm $RND_TYPE = sqrt(s_$N),\n" >> "$FILE"
+printf "\trsqrt $RND_TYPE = 1.0 / norm,\n" >> "$FILE"
+printf "\tq_$N $RND_TYPE = x_$N * rsqrt\n;\n" >> "$FILE"
+
+printf "\nExpressions\n" >> "$FILE"
+printf "\tdot_$N = s_$N,\n" >> "$FILE"
+printf "\tsquare_root_$N = norm,\n" >> "$FILE"
+printf "\tinvsqrt_$N = rsqrt,\n" >> "$FILE"
+printf "\tx_${N}_unit = q_$N\n;\n" >> "$FILE"
 
 echo "Running for N = $N..." | tee -a "$LOG"
 
-"$FPTAYLOR" "$LEN_INFILE" > "$LEN_OUTFILE"
+# May also want --intermediate-opt=true
+#FP_OPTIONS="--maxima-simplification=true"
+FP_OPTIONS=""
+
+"$FPTAYLOR" $FP_OPTIONS "$LEN_INFILE" > "$LEN_OUTFILE"
+

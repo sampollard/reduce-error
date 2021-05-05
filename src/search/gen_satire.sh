@@ -7,12 +7,18 @@ if [ "$#" -ne 0 ]; then
 	echo $USAGE
 	exit 2
 fi
+
+if ! command -v gelpia; then
+	echo "Unable to find 'gelpia' in path"
+	exit 2
+fi
 mkdir -p input
 mkdir -p output
 LOG=log-satire.txt
 rm -f "$LOG"
 
-SATIRE_PY="$HOME/Documents/uo/reduce-error/Satire/src/satire.py"
+
+SATIRE_PY="$HOME/fn-methods/Satire/src/satire.py"
 SKELETON="satire_skeleton.txt"
 SKELETON_DIM=10
 
