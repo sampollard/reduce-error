@@ -59,7 +59,11 @@ int main (int argc, char* argv[])
 		<< xdy.lb() << "," << xdy.ub() << "] +/- "
 		<< xdy.error_ub() << std::endl;
 
-	// These are incorrect, so leave out for now.
+	std::cout << var << " in ["
+		<< xdy.lb() << "," << xdy.ub() << "] to "
+		<< xdy.error_ub()/xdy.ub() / (2*mach_eps<FLOAT_T>) << " ulps" << std::endl;
+
+	// These are incorrect, so leave out for now. FPTaylor or Satire do it better :)
 	/* std::cout << "sqrt(x . y) \\in [" */
 	/* 	<< sqrt_x.lb() << "," << sqrt_x.ub() << "]" << std::endl; */
 	/* std::cout << "abserr(sqrt(x . y)) <= " */

@@ -123,17 +123,21 @@ Scal_E<FLOAT_T> dot_e(Vec_E<FLOAT_T> x, Vec_E<FLOAT_T> y)
 	/* Calculate lower/upper bounds for x,y, absolute and regular */
 	FLOAT_T lb, ub, abs_lb, x_mag, y_mag;
 	std::vector<FLOAT_T> range = std::vector<FLOAT_T>(4);
-	std::vector<FLOAT_T> abs_range = std::vector<FLOAT_T>(4);
+	std::vector<FLOAT_T> abs_range = std::vector<FLOAT_T>(8);
 	range[0] = x.lb() * y.lb();
 	range[1] = x.lb() * y.ub();
 	range[2] = x.ub() * y.lb();
 	range[3] = x.ub() * y.ub();
 	lb = *std::min_element(range.begin(), range.end());
 	ub = *std::max_element(range.begin(), range.end());
-	abs_range[0] = abs(x.lb());
-	abs_range[1] = abs(x.ub());
-	abs_range[2] = abs(y.lb());
-	abs_range[3] = abs(y.ub());
+	abs_range[0] = abs(x.lb()*x.lb());
+	abs_range[1] = abs(x.ub()*x.ub());
+	abs_range[2] = abs(y.lb()*y.lb());
+	abs_range[3] = abs(y.ub()*y.ub());
+	abs_range[4] = abs(x.lb()*y.lb());
+	abs_range[5] = abs(x.ub()*y.ub());
+	abs_range[6] = abs(x.lb()*y.ub());
+	abs_range[7] = abs(y.ub()*y.lb());
 	x_mag = fmax(x.lb(), x.ub());
 	y_mag = fmax(y.lb(), y.ub());
 	abs_lb = *std::min_element(abs_range.begin(), abs_range.end());
