@@ -35,7 +35,7 @@ const MPFR_T_DEFAULT mach_eps_dbl = mach_eps<double>;
  * - machine epsilon for complex
  * - machine delta for complex
  */
-/* TODO: Figure out how to */
+/* TODO: Figure out a better way to do this. Maybe FLT_TRUE_MIN ? */
 const MPFR_T_DEFAULT mach_del_flt =
 	pow(2, std::numeric_limits<float>::min_exponent - 1)*mach_eps<float>;
 const MPFR_T_DEFAULT mach_del_dbl =
@@ -95,8 +95,17 @@ class Vec_E {
 };
 
 /* Operations on vectors */
-/* Given two vectors, return a scalar with error bounds */
+/* Error bounds of dot product */
 template <typename FLOAT_T>
 Scal_E<FLOAT_T> dot_e(Vec_E<FLOAT_T> x, Vec_E<FLOAT_T> y);
+
+/* Operations on Scalars */
+/* Error of sqrt of scalars */
+template <typename FLOAT_T>
+Scal_E<FLOAT_T> sqrt_e(Scal_E<FLOAT_T> x);
+
+/* Error of inverse of scalar (1.0/x) */
+template <typename FLOAT_T>
+Scal_E<FLOAT_T> inv_e(Scal_E<FLOAT_T> x);
 
 #endif

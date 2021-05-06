@@ -108,6 +108,7 @@ Scal_E<FLOAT_T> dot_e(Vec_E<FLOAT_T> x, Vec_E<FLOAT_T> y)
 	/* TODO: Allow for different floating-point types in return-value and input. */
 	long long n = x.length();
 	assert(x.length() == y.length());
+	/* Weirdness cause I couldn't get the template to work, see mach_del_dbl in .hxx */
 	MPFR_T_DEFAULT mach_del;
 	if (typeid(FLOAT_T) == typeid(double)) {
 		mach_del = mach_del_dbl;
@@ -118,8 +119,9 @@ Scal_E<FLOAT_T> dot_e(Vec_E<FLOAT_T> x, Vec_E<FLOAT_T> y)
 			<< typeid(FLOAT_T).name() << std::endl;
 		throw(ANALYSIS_EXCEPTION);
 	}
-	MPFR_T_DEFAULT err;
-	FLOAT_T lb, ub;
+	MPFR_T_DEFAULT err, subn;
+	/* Calculate lower/upper bounds for x,y, absolute and regular */
+	FLOAT_T lb, ub, abs_lb, x_mag, y_mag;
 	std::vector<FLOAT_T> range = std::vector<FLOAT_T>(4);
 	std::vector<FLOAT_T> abs_range = std::vector<FLOAT_T>(4);
 	range[0] = x.lb() * y.lb();
@@ -132,15 +134,44 @@ Scal_E<FLOAT_T> dot_e(Vec_E<FLOAT_T> x, Vec_E<FLOAT_T> y)
 	abs_range[1] = abs(x.ub());
 	abs_range[2] = abs(y.lb());
 	abs_range[3] = abs(y.ub());
-	FLOAT_T mag = *std::max_element(abs_range.begin(), abs_range.end());
+	x_mag = fmax(x.lb(), x.ub());
+	y_mag = fmax(y.lb(), y.ub());
+	abs_lb = *std::min_element(abs_range.begin(), abs_range.end());
+
+	/* Check if subnormal numbers are possible */
+	subn = 0.0;
+	if (abs_lb < std::numeric_limits<FLOAT_T>::min()) {
+		subn = n * mach_del * (1.0 + gamma(typeid(FLOAT_T), n-1));
+	}
 
 	/*  e * |x| . |y| * \gamma_n + nd(1 + \theta_{n-1}) */
-	err = x.error_ub() + y.error_lb()
-		+ mag * mag * n * gamma(typeid(FLOAT_T), n)
-		+ n * mach_del * (1.0 + gamma(typeid(FLOAT_T), n-1));
+	err = x.error_ub() + y.error_ub()
+		+ x_mag * y_mag * n * gamma(typeid(FLOAT_T), n)
+		+ subn;
 	return Scal_E<FLOAT_T>(n * lb, n * ub, err);
 }
 
+/* TODO: Fix */
+template <typename FLOAT_T>
+Scal_E<FLOAT_T> sqrt_e(Scal_E<FLOAT_T> x)
+{
+	MPFR_T_DEFAULT eps = mach_eps<FLOAT_T>;
+	MPFR_T_DEFAULT one = 1.0;
+	MPFR_T_DEFAULT err =
+		eps * (one + x.error_ub()) * fmax(sqrt(x.lb()), sqrt(x.ub()));
+	return Scal_E<FLOAT_T>(sqrt(x.lb()), sqrt(x.ub()), err);
+}
+
+/* TODO: Fix */
+template <typename FLOAT_T>
+Scal_E<FLOAT_T> inv_e(Scal_E<FLOAT_T> x)
+{
+	MPFR_T_DEFAULT eps = mach_eps<FLOAT_T>;
+	MPFR_T_DEFAULT one = 1.0;
+	MPFR_T_DEFAULT err =
+		(one + eps) / max(x.ub() + x.error_ub(), x.lb() + x.error_ub());
+	return Scal_E<FLOAT_T>(1.0/x.ub(), 1.0/x.lb(), err);
+}
 
 /* Explicit template instantiation. */
 template class Vec_E< double, mpfr_float_1000 >;
@@ -149,4 +180,8 @@ template class Scal_E< double, mpfr_float_1000 >;
 template class Scal_E< float, mpfr_float_1000 >;
 template Scal_E<float> dot_e(Vec_E<float> x, Vec_E<float> y);
 template Scal_E<double> dot_e(Vec_E<double> x, Vec_E<double> y);
+template Scal_E<float> sqrt_e(Scal_E<float> x);
+template Scal_E<double> sqrt_e(Scal_E<double> x);
+template Scal_E<float> inv_e(Scal_E<float> x);
+template Scal_E<double> inv_e(Scal_E<double> x);
 #endif
