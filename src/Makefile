@@ -24,9 +24,9 @@ HEADERS = assoc.hxx error_semantics.hxx mpi_op.hxx rand.hxx util.hxx
 ifeq ($(USE_MPI), 1)
 TARGETS = mpi_pi_reduce dotprod_mpi
 else
-TARGETS = assoc_test gen_random calc_bounds
+TARGETS = assoc_test gen_random
 endif
-ALL_TARGETS = mpi_pi_reduce dotprod_mpi assoc_test gen_random calc_bounds
+ALL_TARGETS = mpi_pi_reduce dotprod_mpi assoc_test gen_random
 
 LIBS += -lmpfr -lgmp
 CXXFLAGS += -Wall -g -std=c++14
@@ -54,8 +54,6 @@ assoc_test : assoc_test.o rand.o assoc.o
 	mkdir -p $(EXP_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 gen_random : gen_random.o rand.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
-calc_bounds : error_semantics.o calc_bounds.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 endif
 
@@ -111,16 +109,12 @@ quick : dotprod_mpi
 ompi : mpi_pi_reduce dotprod_mpi
 	$(MAKE) -f openmpi.mk ompi
 
-high_error : calc_bounds
-	$(MAKE) -f high_error.mk all
-
 clean :
 	$(RM) $(TARGETS) $(ALL_TARGETS) $(ALL_TARGETS:=.o) $(TARGET_OBJS) $(OBJECTS) $(HEADERS:=.gch) $(TARGETS)_*.so smpitmp-app*
 
 # Dependency lists
 assoc.o : assoc.hxx
 assoc_test.o : assoc.hxx rand.hxx util.hxx
-calc_bounds.o : error_semantics.hxx
 error_semantics.o : error_semantics.hxx
 dotprod_mpi.o : error_semantics.hxx rand.hxx assoc.hxx mpi_op.hxx util.hxx
 gen_random.o : rand.hxx
